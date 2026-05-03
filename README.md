@@ -9,3 +9,4 @@
 ## docs
 
 - [Claude Code 项目文件结构最佳实践](./docs/project-structure-best-practice.md)
+- [Agent Team Roster](./docs/agent-team.md): 组件开发中的 agent team 配置参考，包含每个角色的职责边界、默认发言策略与推荐模型。
