@@ -10,3 +10,4 @@
 
 - [Claude Code 项目文件结构最佳实践](./docs/project-structure-best-practice.md)
 - [Agent Team Roster](./docs/agent-team.md): 组件开发中的 agent team 配置参考，包含每个角色的职责边界、默认发言策略与推荐模型。
+- [npm Release Pipeline — From Zero To Shipped](./docs/npm-release-from-zero-to-shipped.md): npm 包从零到 OIDC 自动发版的端到端 runbook。`LoTwT/design-system` V0.0.1 / V0.0.2 是 worked example。
