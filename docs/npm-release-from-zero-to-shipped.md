@@ -209,10 +209,10 @@ Each tool does one thing.
 Atomically bumps versions, runs an `execute` command, commits, tags,
 pushes.
 
-**Default path**: `bumpp.config.ts` + the bumpp CLI.
+**Default path**: `bump.config.ts` + the bumpp CLI.
 
 ```ts
-// bumpp.config.ts
+// bump.config.ts
 import type { VersionBumpOptions } from "bumpp"
 
 const config: VersionBumpOptions = {
@@ -256,7 +256,7 @@ pnpm release:bump 1.0.0-beta.1   # Pre-release.
 **Alternative path**: `scripts/release-bump.mjs` calling bumpp's
 exported `versionBump()`.
 
-Use when `bumpp.config.ts` can't express the constraint. Triggers:
+Use when `bump.config.ts` can't express the constraint. Triggers:
 
 - Dynamic `files` list resolved from disk at run time.
 - Pre-bump preconditions (e.g. require clean working tree + green CI on
@@ -850,7 +850,7 @@ Decide:
 
 Land the pieces from §3 on a normal PR (not yet a release):
 
-- `bumpp.config.ts` (§3.1)
+- `bump.config.ts` (§3.1)
 - `cliff.toml` (§3.2)
 - `package.json` scripts: `release:bump`, `changelog`, `prepare`
   (§3.1 + §3.4)
@@ -1011,7 +1011,7 @@ npm treats it as a hard incident.
 ## 13. When NOT to walk this on autopilot
 
 - Multi-package repos where the publishable set changes between
-  releases — keep `bumpp.config.ts` `files` list in sync.
+  releases — keep `bump.config.ts` `files` list in sync.
 - First publish under a new npm scope — needs scope-owner privileges
   (one-time, separate from this pipeline).
 - Major version bumps — semver review belongs in PR review, not at
