@@ -213,23 +213,45 @@ pushes.
 
 ```ts
 // bump.config.ts
-import type { VersionBumpOptions } from "bumpp"
+import { execSync } from "node:child_process"
+import { resolve } from "node:path"
+import { defineConfig } from "bumpp"
 
-const config: VersionBumpOptions = {
-  // Files to bump. Adjust to repo shape.
+export default defineConfig({
+  // Files bumpp bumps versions in. CHANGELOG.md is NOT listed here —
+  // bumpp would rewrite every version-like string in the changelog
+  // (including past version headers), corrupting history.
   files: [
-    "package.json",            // Always.
-    "packages/*/package.json", // Monorepo only; remove for single-package.
+    "package.json",             // Always.
+    "packages/*/package.json",  // Monorepo only; remove for single-package.
   ],
   commit: true,
   tag: true,
   push: true,
-  recursive: false,            // Files list is explicit; no need to recurse.
-  noGitCheck: false,           // Block dirty working tree.
-  execute: "pnpm changelog",   // Regenerate CHANGELOG.md before commit.
-}
+  install: false,
+  recursive: false,             // Files list is explicit; no need to recurse.
+  noGitCheck: false,            // Block dirty working tree.
 
-export default config
+  // `execute` runs AFTER bumpp updates `files`, BEFORE the release commit.
+  // We regenerate CHANGELOG.md via git-cliff, then add CHANGELOG.md to
+  // bumpp's `updatedFiles` so it ships in the release commit + tag.
+  // Using `operation.update({ updatedFiles })` is the safe path:
+  // listing CHANGELOG.md in `files` would trigger the version-string
+  // rewrite described above.
+  execute: (operation) => {
+    execSync("pnpm changelog", {
+      cwd: operation.options.cwd,
+      stdio: "inherit",
+    })
+
+    operation.update({
+      updatedFiles: [
+        ...operation.state.updatedFiles,
+        resolve(operation.options.cwd, "CHANGELOG.md"),
+      ],
+    })
+  },
+})
 ```
 
 ```jsonc
@@ -567,9 +589,17 @@ jobs:
         run: pnpm -r publish --access public --no-git-checks
 
       # 6. Registry install smoke with retry-with-backoff.
-      #    npm CDN propagation needs ~10–60s after publish; the first
-      #    install can race with `ETARGET notarget`. Retry within a
-      #    bounded budget (default 6 × 10s = 60s).
+      #    npm CDN propagation usually completes in 10–60s after publish
+      #    but can tail into a few minutes. The first install attempt
+      #    can race with `ETARGET notarget`. Retry within a bounded
+      #    budget: 10 attempts × 30s delay = ~5 minutes total
+      #    (9 sleeps × 30s + per-attempt install time).
+      #
+      #    Note: hitting the cap means propagation timed out, NOT that
+      #    the publish failed. Inspect `npm view <pkg>@<version> version`
+      #    out-of-band before rerunning the job — if the version exists,
+      #    the publish itself succeeded and only the smoke step needs a
+      #    retry.
       - name: Registry install smoke
         env:
           VERSION: ${{ steps.release.outputs.version }}
@@ -580,12 +610,12 @@ jobs:
           npm init -y >/dev/null
           # Replace <pkg> with your CLI entry / library entry package name.
           PKG="<your-entry-pkg>"
-          MAX_ATTEMPTS=6
-          DELAY=10
+          MAX_ATTEMPTS=10
+          DELAY=30
           ATTEMPT=1
           until npm install "${PKG}@${VERSION}" >/dev/null 2>&1; do
             if [ "$ATTEMPT" -ge "$MAX_ATTEMPTS" ]; then
-              echo "npm install failed after $MAX_ATTEMPTS attempts" >&2
+              echo "registry install smoke timed out after $MAX_ATTEMPTS attempts (~$((MAX_ATTEMPTS * DELAY))s). Publish may still have succeeded; verify with: npm view ${PKG}@${VERSION} version" >&2
               # Final attempt without redirect so the real error reaches the log.
               npm install "${PKG}@${VERSION}"
               exit 1
