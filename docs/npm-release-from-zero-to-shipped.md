@@ -213,23 +213,45 @@ pushes.
 
 ```ts
 // bump.config.ts
-import type { VersionBumpOptions } from "bumpp"
+import { execSync } from "node:child_process"
+import { resolve } from "node:path"
+import { defineConfig } from "bumpp"
 
-const config: VersionBumpOptions = {
-  // Files to bump. Adjust to repo shape.
+export default defineConfig({
+  // Files bumpp bumps versions in. CHANGELOG.md is NOT listed here —
+  // bumpp would rewrite every version-like string in the changelog
+  // (including past version headers), corrupting history.
   files: [
-    "package.json",            // Always.
-    "packages/*/package.json", // Monorepo only; remove for single-package.
+    "package.json",             // Always.
+    "packages/*/package.json",  // Monorepo only; remove for single-package.
   ],
   commit: true,
   tag: true,
   push: true,
-  recursive: false,            // Files list is explicit; no need to recurse.
-  noGitCheck: false,           // Block dirty working tree.
-  execute: "pnpm changelog",   // Regenerate CHANGELOG.md before commit.
-}
+  install: false,
+  recursive: false,             // Files list is explicit; no need to recurse.
+  noGitCheck: false,            // Block dirty working tree.
 
-export default config
+  // `execute` runs AFTER bumpp updates `files`, BEFORE the release commit.
+  // We regenerate CHANGELOG.md via git-cliff, then add CHANGELOG.md to
+  // bumpp's `updatedFiles` so it ships in the release commit + tag.
+  // Using `operation.update({ updatedFiles })` is the safe path:
+  // listing CHANGELOG.md in `files` would trigger the version-string
+  // rewrite described above.
+  execute: (operation) => {
+    execSync("pnpm changelog", {
+      cwd: operation.options.cwd,
+      stdio: "inherit",
+    })
+
+    operation.update({
+      updatedFiles: [
+        ...operation.state.updatedFiles,
+        resolve(operation.options.cwd, "CHANGELOG.md"),
+      ],
+    })
+  },
+})
 ```
 
 ```jsonc
@@ -269,7 +291,8 @@ Minimal wrapper shape:
 
 ```js
 // scripts/release-bump.mjs
-import { execFileSync } from "node:child_process"
+import { execFileSync, execSync } from "node:child_process"
+import { resolve } from "node:path"
 import { versionBump } from "bumpp"
 
 const releaseArg = process.argv[2]
@@ -283,11 +306,28 @@ if (branch !== "main") {
 
 await versionBump({
   release: releaseArg ?? "patch",
+  // Same constraint as the default `bump.config.ts`: CHANGELOG.md is NOT
+  // listed here. It's added to bumpp's staging via `execute` below; listing
+  // it in `files` would let bumpp rewrite past version headers.
   files: ["package.json", "packages/*/package.json"],
   commit: true,
   tag: true,
   push: true,
-  execute: "pnpm changelog",
+  // Mirror the default config's execute-function pattern so CHANGELOG.md
+  // ships in the release commit without falling into the rewrite trap.
+  execute: (operation) => {
+    execSync("pnpm changelog", {
+      cwd: operation.options.cwd,
+      stdio: "inherit",
+    })
+
+    operation.update({
+      updatedFiles: [
+        ...operation.state.updatedFiles,
+        resolve(operation.options.cwd, "CHANGELOG.md"),
+      ],
+    })
+  },
 })
 ```
 
@@ -372,7 +412,7 @@ Publish commands differ along two axes: monorepo vs single-package
 | Context | Monorepo | Single-package |
 |---|---|---|
 | **Local manual publish** (from `main`, clean tree, HEAD = tag) | `pnpm -r publish --access public` | `pnpm publish --access public` |
-| **CI publish** (tag-triggered, detached HEAD on the tag commit) | `pnpm -r publish --access public --no-git-checks --provenance` | `pnpm publish --access public --no-git-checks --provenance` |
+| **CI publish** (tag-triggered, detached HEAD on the tag commit) | `pnpm -r publish --access public --no-git-checks` | `pnpm publish --access public --no-git-checks` |
 
 Flag reference:
 
@@ -391,9 +431,16 @@ Flag reference:
   is a detached HEAD. **Not** used in local publish from `main` — the
   default checks should pass, and skipping them silently in local flow
   hides drift.
-- `--provenance` — emits an npm provenance attestation when the publish
-  runs in an OIDC context (CI). Omit in local manual publish (§7.2):
-  provenance requires OIDC claims, which a local publish doesn't have.
+- `--provenance` — **do not pass this flag.** Under npm Trusted
+  Publishing (OIDC), provenance attestations are generated
+  server-side automatically; passing `--provenance` on the client
+  triggers a duplicate sigstore-transparency-log entry that fails the
+  publish with `TLOG_CREATE_ENTRY_ERROR`. This applies to both local
+  and CI publishes. The OIDC-published versions still carry
+  provenance attestations on npm (verify with
+  `npm view <pkg>@<X.Y.Z> --json | jq '.dist.attestations'`); the
+  flag is only relevant to legacy static-token publishes and is
+  incompatible with Trusted Publishing.
 
 `pnpm -r` topologically orders publishes: a package's workspace deps
 publish before it. `workspace:*` references are rewritten to the
@@ -550,16 +597,27 @@ jobs:
       #    Monorepo: pnpm -r publish (topology + workspace:* substitution).
       #    Single-package: pnpm publish (drop `-r`).
       #    pnpm recursive commands bail by default; do not pass --no-bail.
+      #    Do NOT pass --provenance — Trusted Publishing generates the
+      #    provenance attestation server-side; the client flag triggers
+      #    TLOG_CREATE_ENTRY_ERROR. See §3.3 flag reference.
       #    Retry-safety: if a rerun finds the version already on npm,
       #    pnpm errors "version already exists" and the job fails fast.
       #    No pre-existence check needed.
       - name: Publish
-        run: pnpm -r publish --access public --no-git-checks --provenance
+        run: pnpm -r publish --access public --no-git-checks
 
       # 6. Registry install smoke with retry-with-backoff.
-      #    npm CDN propagation needs ~10–60s after publish; the first
-      #    install can race with `ETARGET notarget`. Retry within a
-      #    bounded budget (default 6 × 10s = 60s).
+      #    npm CDN propagation usually completes in 10–60s after publish
+      #    but can tail into a few minutes. The first install attempt
+      #    can race with `ETARGET notarget`. Retry within a bounded
+      #    budget: 10 attempts × 30s delay = ~5 minutes total
+      #    (9 sleeps × 30s + per-attempt install time).
+      #
+      #    Note: hitting the cap means propagation timed out, NOT that
+      #    the publish failed. Inspect `npm view <pkg>@<version> version`
+      #    out-of-band before rerunning the job — if the version exists,
+      #    the publish itself succeeded and only the smoke step needs a
+      #    retry.
       - name: Registry install smoke
         env:
           VERSION: ${{ steps.release.outputs.version }}
@@ -570,12 +628,12 @@ jobs:
           npm init -y >/dev/null
           # Replace <pkg> with your CLI entry / library entry package name.
           PKG="<your-entry-pkg>"
-          MAX_ATTEMPTS=6
-          DELAY=10
+          MAX_ATTEMPTS=10
+          DELAY=30
           ATTEMPT=1
           until npm install "${PKG}@${VERSION}" >/dev/null 2>&1; do
             if [ "$ATTEMPT" -ge "$MAX_ATTEMPTS" ]; then
-              echo "npm install failed after $MAX_ATTEMPTS attempts" >&2
+              echo "registry install smoke timed out after $MAX_ATTEMPTS attempts (~$((MAX_ATTEMPTS * DELAY))s). Publish may still have succeeded; verify with: npm view ${PKG}@${VERSION} version" >&2
               # Final attempt without redirect so the real error reaches the log.
               npm install "${PKG}@${VERSION}"
               exit 1
@@ -750,8 +808,12 @@ pnpm -r publish --access public
 #
 # No `--no-git-checks`: we are on main with a clean tree and HEAD at the tag,
 # so pnpm's default git checks should all pass.
-# No `--provenance`: provenance requires OIDC context; a local publish doesn't
-# have one. v0.0.1 ships without provenance; v0.0.2+ over OIDC will have it.
+# No `--provenance`: v0.0.1 manual publish runs under a static-token auth, not
+# Trusted Publishing, so there's no OIDC context for provenance attestation.
+# v0.0.1 ships without provenance; v0.0.2+ publishes under Trusted Publishing
+# (OIDC) and gets server-side provenance automatically — also without the
+# `--provenance` flag (see §3.3; the flag triggers TLOG_CREATE_ENTRY_ERROR
+# under Trusted Publishing).
 # No `--no-bail`: pnpm recursive commands bail by default; we want fail-fast
 # on partial publish failures.
 ```
@@ -987,7 +1049,7 @@ npm treats it as a hard incident.
 |---|---|
 | OIDC | OpenID Connect. GitHub Actions can mint short-lived ID tokens with claims about repo / workflow / environment. npm Trusted Publisher accepts these as a publish credential, eliminating stored tokens. |
 | Trusted Publisher | npm setting on a package, binding it to a (provider, owner, repo, workflow, environment) tuple. A publish only succeeds if the OIDC token's claims match. |
-| Provenance attestation | npm's signed metadata about how a package was built. Generated when publishing under OIDC with `--provenance`. Visible on the npm package page. |
+| Provenance attestation | npm's signed metadata about how a package was built. Generated server-side automatically when publishing under npm Trusted Publishing (OIDC); **do not pass the `--provenance` client flag** — it triggers `TLOG_CREATE_ENTRY_ERROR`. Visible on the npm package page and via `npm view <pkg>@<X.Y.Z> --json | jq '.dist.attestations'`. |
 | Conventional Commits | Commit message convention parsed by git-cliff to bucket changes into Added / Fixed / Changed / etc. |
 | `gitHead` | npm's per-version metadata field recording the commit SHA the publish ran from. **Not** written by `pnpm publish`. This pipeline does not rely on it; traceability runs through the GitHub release tag. |
 | Environment (GitHub) | A named scope inside a repo's Actions config carrying secrets, deployment branches, required reviewers, and OIDC sub-claims. The publish job's `environment:` key binds to one. |
