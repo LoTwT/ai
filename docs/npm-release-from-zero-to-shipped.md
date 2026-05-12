@@ -372,7 +372,7 @@ Publish commands differ along two axes: monorepo vs single-package
 | Context | Monorepo | Single-package |
 |---|---|---|
 | **Local manual publish** (from `main`, clean tree, HEAD = tag) | `pnpm -r publish --access public` | `pnpm publish --access public` |
-| **CI publish** (tag-triggered, detached HEAD on the tag commit) | `pnpm -r publish --access public --no-git-checks --provenance` | `pnpm publish --access public --no-git-checks --provenance` |
+| **CI publish** (tag-triggered, detached HEAD on the tag commit) | `pnpm -r publish --access public --no-git-checks` | `pnpm publish --access public --no-git-checks` |
 
 Flag reference:
 
@@ -391,9 +391,16 @@ Flag reference:
   is a detached HEAD. **Not** used in local publish from `main` — the
   default checks should pass, and skipping them silently in local flow
   hides drift.
-- `--provenance` — emits an npm provenance attestation when the publish
-  runs in an OIDC context (CI). Omit in local manual publish (§7.2):
-  provenance requires OIDC claims, which a local publish doesn't have.
+- `--provenance` — **do not pass this flag.** Under npm Trusted
+  Publishing (OIDC), provenance attestations are generated
+  server-side automatically; passing `--provenance` on the client
+  triggers a duplicate sigstore-transparency-log entry that fails the
+  publish with `TLOG_CREATE_ENTRY_ERROR`. This applies to both local
+  and CI publishes. The OIDC-published versions still carry
+  provenance attestations on npm (verify with
+  `npm view <pkg>@<X.Y.Z> --json | jq '.dist.attestations'`); the
+  flag is only relevant to legacy static-token publishes and is
+  incompatible with Trusted Publishing.
 
 `pnpm -r` topologically orders publishes: a package's workspace deps
 publish before it. `workspace:*` references are rewritten to the
@@ -550,11 +557,14 @@ jobs:
       #    Monorepo: pnpm -r publish (topology + workspace:* substitution).
       #    Single-package: pnpm publish (drop `-r`).
       #    pnpm recursive commands bail by default; do not pass --no-bail.
+      #    Do NOT pass --provenance — Trusted Publishing generates the
+      #    provenance attestation server-side; the client flag triggers
+      #    TLOG_CREATE_ENTRY_ERROR. See §3.3 flag reference.
       #    Retry-safety: if a rerun finds the version already on npm,
       #    pnpm errors "version already exists" and the job fails fast.
       #    No pre-existence check needed.
       - name: Publish
-        run: pnpm -r publish --access public --no-git-checks --provenance
+        run: pnpm -r publish --access public --no-git-checks
 
       # 6. Registry install smoke with retry-with-backoff.
       #    npm CDN propagation needs ~10–60s after publish; the first
@@ -750,8 +760,12 @@ pnpm -r publish --access public
 #
 # No `--no-git-checks`: we are on main with a clean tree and HEAD at the tag,
 # so pnpm's default git checks should all pass.
-# No `--provenance`: provenance requires OIDC context; a local publish doesn't
-# have one. v0.0.1 ships without provenance; v0.0.2+ over OIDC will have it.
+# No `--provenance`: v0.0.1 manual publish runs under a static-token auth, not
+# Trusted Publishing, so there's no OIDC context for provenance attestation.
+# v0.0.1 ships without provenance; v0.0.2+ publishes under Trusted Publishing
+# (OIDC) and gets server-side provenance automatically — also without the
+# `--provenance` flag (see §3.3; the flag triggers TLOG_CREATE_ENTRY_ERROR
+# under Trusted Publishing).
 # No `--no-bail`: pnpm recursive commands bail by default; we want fail-fast
 # on partial publish failures.
 ```
@@ -987,7 +1001,7 @@ npm treats it as a hard incident.
 |---|---|
 | OIDC | OpenID Connect. GitHub Actions can mint short-lived ID tokens with claims about repo / workflow / environment. npm Trusted Publisher accepts these as a publish credential, eliminating stored tokens. |
 | Trusted Publisher | npm setting on a package, binding it to a (provider, owner, repo, workflow, environment) tuple. A publish only succeeds if the OIDC token's claims match. |
-| Provenance attestation | npm's signed metadata about how a package was built. Generated when publishing under OIDC with `--provenance`. Visible on the npm package page. |
+| Provenance attestation | npm's signed metadata about how a package was built. Generated server-side automatically when publishing under npm Trusted Publishing (OIDC); **do not pass the `--provenance` client flag** — it triggers `TLOG_CREATE_ENTRY_ERROR`. Visible on the npm package page and via `npm view <pkg>@<X.Y.Z> --json | jq '.dist.attestations'`. |
 | Conventional Commits | Commit message convention parsed by git-cliff to bucket changes into Added / Fixed / Changed / etc. |
 | `gitHead` | npm's per-version metadata field recording the commit SHA the publish ran from. **Not** written by `pnpm publish`. This pipeline does not rely on it; traceability runs through the GitHub release tag. |
 | Environment (GitHub) | A named scope inside a repo's Actions config carrying secrets, deployment branches, required reviewers, and OIDC sub-claims. The publish job's `environment:` key binds to one. |
