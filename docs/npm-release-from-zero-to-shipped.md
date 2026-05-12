@@ -1,145 +1,298 @@
 # From Zero To Shipped — npm Release Pipeline Runbook
 
-A reference for setting up a tag-driven npm release pipeline backed by
-GitHub Actions OIDC + npm Trusted Publisher, distilled from the
-`LoTwT/design-system` v0.0.1 → v0.0.2 ship cycle (2026-05-08 → 2026-05-10).
+Set up a tag-driven npm release pipeline backed by GitHub Actions OIDC
+and npm Trusted Publisher.
 
-## Target outcome
+**Audience**: technical operators and AI agents executing this
+end-to-end. Steps are numbered and annotated; comments explain why a
+step exists. Skip framing prose; read the commands.
 
-After Phases 0–5, a release looks like this:
+**Scope**:
 
-1. `pnpm release:bump <X.Y.Z>` from `main` (run by an admin).
-2. bumpp creates `chore: release vX.Y.Z` commit + tag `vX.Y.Z` and pushes both.
-3. The tag push triggers `.github/workflows/release.yml`.
-4. The workflow validates release metadata, runs gates, packs each
-   package, publishes to npm via short-lived OIDC token (no static
-   secrets), runs a registry install smoke with retry-with-backoff,
-   then creates the GitHub Release.
-5. No human approval needed *in* the CI run. The human gate is moved
-   *upstream* to tag creation: only an admin can push `v*.*.*` tags via
-   a repository tag-protection ruleset.
+- pnpm only. npm / yarn paths are out of scope.
+- Both monorepo (pnpm workspace) and single-package layouts.
+- Two starting points: greenfield (first publish ever) and brownfield
+  (packages already on npm).
 
-The protection model: **pushing a release tag is the human-in-the-loop**;
-the CI is a deterministic continuation of that decision. Phase 6 covers
-what to do when CI or publish goes wrong.
+---
 
-This doc walks each phase end-to-end. Use it once when bootstrapping a
-new repo, then keep it around as a reference for the rare incident or
-for porting the pipeline to another monorepo.
+## Outcome
 
-## Phase 0 — Repo prerequisites
+A routine release after bootstrap:
 
-Before any release tooling is added, the repo needs a shape that the
-pipeline can target:
+```bash
+# 1. Bump version (interactive picker, or explicit form).
+pnpm release:bump                # interactive: pick patch | minor | major | ...
+pnpm release:bump patch          # keyword form
+pnpm release:bump 1.2.3          # explicit version
 
-### 0.1 Workspace and package layout
+# bumpp updates package.json(s), runs `pnpm changelog` (git-cliff) via
+# the `execute` hook, creates the release commit, tags `vX.Y.Z`, pushes.
 
-- pnpm workspace, with `pnpm-workspace.yaml` listing the publishable
-  packages (e.g. `packages/*`).
-- A **private** root `package.json` (`"private": true`) — only workspace
-  packages publish; the root never does.
-- Each publishable package's `package.json` carries:
-  - `"name"` under your npm scope (e.g. `@yourscope/<pkg>`)
-  - `"version"` (kept in sync across all publishable packages by the
-    bump script in Phase 1)
-  - `"publishConfig": { "access": "public" }` — required for first-time
-    publishes of scoped packages
-  - `"files"` listing what ships in the tarball (tested by `npm pack`
-    in CI)
-  - `"exports"` describing the public surface
+# 2. CI (.github/workflows/release.yml) triggers on the tag push:
+#    - validates metadata
+#    - runs gates (build → check → test)
+#    - publishes via `pnpm publish` over OIDC (no static secret)
+#    - runs registry-install smoke with retry-with-backoff
+#    - generates release notes via `git-cliff --latest`
+#    - creates the GitHub Release
 
-### 0.2 npm scope ownership (one-time)
+# 3. No reviewer approval in CI. The human gate is upstream:
+#    only repo admins can push `v*.*.*` tags via a tag-protection ruleset.
+```
 
-Whichever account will be tied to the publish must own the npm scope.
-For an org scope, it must have **publish** rights on the org. For a
-personal scope, the account itself owns it. This is the only step that
-is genuinely manual and outside the pipeline.
+The protection model: pushing a release tag is the human-in-the-loop.
+CI is the deterministic continuation.
 
-### 0.3 GitHub repo permissions and CI baseline
+---
 
-- The publishing identity (lo-user / agent) has **admin** on the GitHub
-  repo. The hardening in Phase 4 depends on admin-level ruleset config.
-- Existing CI (e.g. PR build / lint / test) is green and uses the same
-  pnpm + Node versions the release workflow will use. If the release
-  workflow uses a different Node major, expect drift.
+# Part I — Foundation
 
-## Phase 1 — Release scripts (in-repo files)
+Set up once per repo. Sections are independent within Part I; skip
+items already configured.
 
-### 1.1 `scripts/release-bump.mjs`
+## 1. Concepts
 
-A bumpp wrapper. Guards:
+### 1.1 OIDC + Trusted Publisher
 
-- must run from `main` with an upstream branch
-- accepts a release type (patch / minor / major / explicit version)
-- bumps every relevant `package.json` so versions move atomically
-  (root + every publishable workspace package)
+- GitHub Actions can mint a short-lived OIDC token for the running job,
+  with claims about repo / workflow / environment / ref.
+- npm's Trusted Publisher feature accepts such tokens as a publish
+  credential, replacing stored npm tokens entirely.
+- A Trusted Publisher binding is a `(provider, owner, repo, workflow,
+  environment)` tuple attached to a specific package on npmjs.com. The
+  publish succeeds only if the OIDC token's claims match.
+
+### 1.2 Tag push = human gate
+
+After hardening (§5):
+
+- `npm-publish` Environment has no Required reviewers — CI runs
+  autonomously.
+- A tag-protection ruleset restricts `v*.*.*` tag creation to admins.
+
+Decision moment moves from "who clicks approve in CI" to "who can push
+the release tag".
+
+### 1.3 Two bootstrap paths
+
+- **Greenfield (§7)**: no package on npm yet. v0.0.1 publishes manually
+  from a local terminal (Trusted Publisher binding requires the package
+  to exist on npm first). Then v0.0.2 validates OIDC publish.
+- **Brownfield (§8)**: packages already on npm. Trusted Publisher
+  attaches immediately. The next routine release ships over OIDC.
+
+### 1.4 pnpm prerequisite
+
+The runbook assumes pnpm as the package manager. Workspaces use
+`pnpm-workspace.yaml`. Publishing uses `pnpm publish`. Install uses
+`pnpm install`.
+
+## 2. Repo prerequisites
+
+### 2.1 Package layout
+
+Two supported shapes:
+
+**Monorepo (pnpm workspace)**
+
+```yaml
+# pnpm-workspace.yaml
+packages:
+  - 'packages/*'
+```
+
+```jsonc
+// Root package.json
+{
+  "private": true,    // Root never publishes. Only workspace packages do.
+  "name": "<repo>-monorepo",
+  "version": "0.0.0",
+  "scripts": { /* see §3 */ }
+}
+```
+
+Every publishable workspace package:
+
+```jsonc
+// packages/<pkg>/package.json — scoped example.
+{
+  "name": "@<scope>/<pkg>",                 // Or "<pkg>" for an unscoped package.
+  "version": "0.0.0",                       // Kept in sync by bumpp.
+  "publishConfig": { "access": "public" },  // Required for scoped first-publishes; harmless on unscoped.
+  "files": ["dist", "README.md", "LICENSE"], // What ships in the tarball.
+  "exports": { /* public surface */ },
+  "dependencies": {
+    "@<scope>/<sibling>": "workspace:*"     // pnpm publish substitutes with release version.
+                                            // Sibling can also be unscoped: "<sibling>": "workspace:*".
+  }
+}
+```
+
+Package names in this runbook are written as `@<scope>/<pkg>` for
+brevity, but the pipeline supports unscoped names (`<pkg>`) equally —
+both for single-package and monorepo workspace packages. Where it
+matters (e.g. `--access public` semantics, `publishConfig.access`,
+`workspace:*` substitution), the prose calls out the unscoped case
+explicitly.
+
+**Single-package — scoped**
+
+```jsonc
+// package.json at repo root (not private)
+{
+  "name": "@<scope>/<pkg>",
+  "version": "0.0.0",
+  "publishConfig": { "access": "public" },   // Required for scoped first-publish.
+  "files": ["dist", "README.md", "LICENSE"],
+  "exports": { /* public surface */ }
+  // No `pnpm-workspace.yaml`. No `private: true`.
+}
+```
+
+**Single-package — unscoped**
+
+```jsonc
+// package.json at repo root (not private)
+{
+  "name": "<pkg>",                            // No `@<scope>/` prefix.
+  "version": "0.0.0",
+  // No `publishConfig.access` — unscoped packages default to public on npm.
+  "files": ["dist", "README.md", "LICENSE"],
+  "exports": { /* public surface */ }
+  // No `pnpm-workspace.yaml`. No `private: true`.
+}
+```
+
+### 2.2 npm scope ownership (one-time)
+
+- Org scope: account needs **publish** rights on the org.
+- Personal scope: account owns it implicitly.
+
+Out of pipeline; do once before bootstrap.
+
+### 2.3 GitHub admin
+
+The publishing identity needs **admin** on the GitHub repo (§5
+ruleset requires admin to configure).
+
+### 2.4 Conventional Commits + commitlint
+
+git-cliff parses Conventional Commits to bucket entries into Added /
+Fixed / Changed. Common types: `feat:`, `fix:`, `docs:`, `chore:`,
+`refactor:`, `test:`, `perf:`, `style:`. `feat!:` / `fix!:` denote a
+breaking change. PR titles squash-merge into Conventional Commits.
+
+Lint enforcement via `commitlint` + `simple-git-hooks` (§3.4).
+
+### 2.5 CI baseline
+
+PR-side CI (lint / test / build) green. Same pnpm + Node versions as
+release.yml will use. Drift between PR-CI and release-CI Node majors
+produces release-time surprises.
+
+### 2.6 npm CLI version
+
+Local `npm` and CI runner `npm` ≥ 11.5.1 (OIDC publish support).
+
+```bash
+npm --version
+# Expected: 11.5.1 or newer.
+```
+
+## 3. Tools and in-repo files
+
+Each tool does one thing.
+
+### 3.1 bumpp
+
+Atomically bumps versions, runs an `execute` command, commits, tags,
+pushes.
+
+**Default path**: `bumpp.config.ts` + the bumpp CLI.
+
+```ts
+// bumpp.config.ts
+import type { VersionBumpOptions } from "bumpp"
+
+const config: VersionBumpOptions = {
+  // Files to bump. Adjust to repo shape.
+  files: [
+    "package.json",            // Always.
+    "packages/*/package.json", // Monorepo only; remove for single-package.
+  ],
+  commit: true,
+  tag: true,
+  push: true,
+  recursive: false,            // Files list is explicit; no need to recurse.
+  noGitCheck: false,           // Block dirty working tree.
+  execute: "pnpm changelog",   // Regenerate CHANGELOG.md before commit.
+}
+
+export default config
+```
+
+```jsonc
+// package.json scripts
+{
+  "scripts": {
+    "release:bump": "bumpp",
+    "changelog": "git-cliff --output CHANGELOG.md"
+  }
+}
+```
+
+Invocation forms — all valid:
+
+```bash
+pnpm release:bump            # Interactive: pick patch | minor | major | prepatch | ...
+pnpm release:bump patch      # Keyword form.
+pnpm release:bump minor
+pnpm release:bump major
+pnpm release:bump 1.2.3      # Explicit version.
+pnpm release:bump 1.0.0-beta.1   # Pre-release.
+```
+
+**Alternative path**: `scripts/release-bump.mjs` calling bumpp's
+exported `versionBump()`.
+
+Use when `bumpp.config.ts` can't express the constraint. Triggers:
+
+- Dynamic `files` list resolved from disk at run time.
+- Pre-bump preconditions (e.g. require clean working tree + green CI on
+  HEAD before bumping).
+- Post-bump side effects (e.g. update a separate version-stamp file).
+- Wrapping bumpp inside a multi-step composite (e.g. lint changelog
+  before tagging).
+
+Minimal wrapper shape:
 
 ```js
-#!/usr/bin/env node
+// scripts/release-bump.mjs
 import { execFileSync } from "node:child_process"
 import { versionBump } from "bumpp"
 
-const usage = "Usage: pnpm release:bump [version|major|minor|patch|...]"
-const [, , releaseArg, ...extra] = process.argv
-if (extra.length) {
-  console.error(usage)
-  process.exit(1)
-}
+const releaseArg = process.argv[2]
 
-const sh = (cmd, args) =>
-  execFileSync(cmd, args, { encoding: "utf8" }).trim()
-const branch = sh("git", ["branch", "--show-current"])
+// Example precondition: require main + upstream tracking.
+const branch = execFileSync("git", ["branch", "--show-current"], { encoding: "utf8" }).trim()
 if (branch !== "main") {
-  console.error(`Release bump must run from main, got ${branch || "(detached)"}`)
-  process.exit(1)
-}
-try {
-  sh("git", ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"])
-}
-catch {
-  console.error("Release bump requires main to have an upstream branch")
+  console.error(`Release bump must run from main, got "${branch}"`)
   process.exit(1)
 }
 
 await versionBump({
   release: releaseArg ?? "patch",
-  files: [
-    "package.json",
-    "packages/<pkg-a>/package.json",
-    "packages/<pkg-b>/package.json",
-    // ...one entry per publishable package
-  ],
+  files: ["package.json", "packages/*/package.json"],
   commit: true,
   tag: true,
   push: true,
-  install: false,
-  recursive: false,
-  noGitCheck: false, // bumpp blocks if working tree dirty
+  execute: "pnpm changelog",
 })
 ```
 
-Subject and tag use bumpp defaults: `chore: release vX.Y.Z` and
-`vX.Y.Z`. The release workflow validates these later.
-
-### 1.2 `scripts/prepare-npm-publish.mjs`
-
-For monorepos with workspace deps. Run before each `npm publish`,
-either by the bootstrap operator (Phase 5.1) or by CI (Phase 2 step 5):
-
-- read every publishable package manifest
-- replace `workspace:*` references to sibling publishable packages
-  with the literal release version
-- validate that no `workspace:` protocol leaks remain in the
-  publishable surface
-
-The mutations are **not committed**. They live only in the working
-tree until `npm publish` produces tarballs from them. After publish
-the operator restores `workspace:*` (`git checkout -- packages/*/package.json`)
-or, in CI, the ephemeral checkout discards them.
-
-### 1.3 `package.json` script
-
 ```jsonc
+// package.json scripts (alternative path)
 {
   "scripts": {
     "release:bump": "node scripts/release-bump.mjs"
@@ -147,9 +300,184 @@ or, in CI, the ephemeral checkout discards them.
 }
 ```
 
-## Phase 2 — Release workflow (`.github/workflows/release.yml`)
+### 3.2 git-cliff
 
-Triggered on `push` to `refs/tags/v*.*.*`.
+Generates CHANGELOG.md and GitHub Release notes from Conventional
+Commits.
+
+```toml
+# cliff.toml
+[changelog]
+header = """
+# Changelog
+
+All notable changes to this project are documented in this file.
+
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
+(simplified) and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+"""
+body = """
+{% if version %}\
+## [{{ version | trim_start_matches(pat="v") }}] - {{ timestamp | date(format="%Y-%m-%d") }}
+{% else %}\
+## [Unreleased]
+{% endif %}\
+{% for group, commits in commits | group_by(attribute="group") %}
+### {{ group | upper_first }}
+{% for commit in commits %}
+- {{ commit.message | upper_first }}\
+{% endfor %}
+{% endfor %}\n
+"""
+trim = true
+
+[git]
+conventional_commits = true
+filter_unconventional = false
+commit_parsers = [
+  { message = "^feat",     group = "Added" },
+  { message = "^fix",      group = "Fixed" },
+  { message = "^docs",     group = "Documentation" },
+  { message = "^perf",     group = "Performance" },
+  { message = "^refactor", group = "Changed" },
+  { message = "^chore",    skip  = true },
+  { message = "^test",     skip  = true },
+  { message = "^style",    skip  = true },
+  { message = ".*",        group = "Other" },
+]
+filter_commits = false
+tag_pattern = "v[0-9]+\\.[0-9]+\\.[0-9]+"
+```
+
+Two outputs driven by the same config:
+
+```bash
+# Full CHANGELOG.md (run via bumpp's `execute` hook before each release).
+git-cliff --output CHANGELOG.md
+
+# Latest-version-only (piped to GitHub Release body in §4).
+git-cliff --latest --output /tmp/release-notes.md
+```
+
+### 3.3 pnpm publish
+
+Handles topology, `workspace:*` substitution, provenance, and single-
+vs multi-package invocation.
+
+Publish commands differ along two axes: monorepo vs single-package
+(use `-r` or not), and local-from-main vs CI-tag-triggered
+(`--no-git-checks` only in CI). The four combinations:
+
+| Context | Monorepo | Single-package |
+|---|---|---|
+| **Local manual publish** (from `main`, clean tree, HEAD = tag) | `pnpm -r publish --access public` | `pnpm publish --access public` |
+| **CI publish** (tag-triggered, detached HEAD on the tag commit) | `pnpm -r publish --access public --no-git-checks --provenance` | `pnpm publish --access public --no-git-checks --provenance` |
+
+Flag reference:
+
+- `-r` — recurse workspace packages, skips private root, topological
+  publish order. Monorepo only.
+- **Bail behavior** — `pnpm` recursive commands bail (fail-fast) by
+  default; the opt-out is `--no-bail`. Do **not** pass `--no-bail` in
+  release publish: continuing after a failure leaves a partial-publish
+  state that's hard to reason about. There is no `--bail` flag to set;
+  the default already is bail.
+- `--access public` — required for scoped first-publishes. Harmless on
+  unscoped packages (npm accepts but ignores; unscoped packages default
+  to public). Safe to leave on in every command.
+- `--no-git-checks` — skip pnpm's "must publish from main / clean tree
+  / tag-at-HEAD" checks. Required in CI because tag-triggered checkout
+  is a detached HEAD. **Not** used in local publish from `main` — the
+  default checks should pass, and skipping them silently in local flow
+  hides drift.
+- `--provenance` — emits an npm provenance attestation when the publish
+  runs in an OIDC context (CI). Omit in local manual publish (§7.2):
+  provenance requires OIDC claims, which a local publish doesn't have.
+
+`pnpm -r` topologically orders publishes: a package's workspace deps
+publish before it. `workspace:*` references are rewritten to the
+literal release version in the published tarball — no prepare script
+needed.
+
+**Caveat vs `npm publish`**: `pnpm publish` does not write the
+`gitHead` metadata field. This pipeline does not rely on `gitHead`;
+retry-safety comes from pnpm's own "version already exists" error
+(§4 step 5). See §12 (Glossary) for what `gitHead` is.
+
+Source: <https://pnpm.io/cli/publish>, <https://docs.npmjs.com/cli/v11/commands/npm-publish/>.
+
+### 3.4 commitlint + simple-git-hooks
+
+Enforce Conventional Commits at commit time via a local git hook.
+
+Install:
+
+```bash
+pnpm add -D @commitlint/cli @commitlint/config-conventional simple-git-hooks
+```
+
+```jsonc
+// package.json
+{
+  "scripts": {
+    "prepare": "simple-git-hooks"
+  },
+  "simple-git-hooks": {
+    "commit-msg": "pnpm exec commitlint --edit $1"
+  }
+}
+```
+
+```js
+// commitlint.config.js — requires `"type": "module"` in package.json.
+// If the project is CommonJS, rename to `commitlint.config.cjs` and use
+// `module.exports = { extends: ["@commitlint/config-conventional"] }`.
+export default {
+  extends: ["@commitlint/config-conventional"],
+}
+```
+
+After `pnpm install`, simple-git-hooks installs `.git/hooks/commit-msg`
+which runs commitlint against each commit message. Non-conforming
+messages fail locally before commit.
+
+CI-side lint is **not** added — local enforcement is sufficient for
+this pipeline. Contributors without the hook (e.g. unintentional skip)
+will not get caught at PR time; rely on PR review.
+
+### 3.5 GitHub Actions used
+
+| Action | First-party? | Notes |
+|---|---|---|
+| `actions/checkout@v6` | Yes | Use `fetch-depth: 0` so git-cliff can read full history. |
+| `pnpm/action-setup@v6` | Official | pnpm's own action. |
+| `actions/setup-node@v6` | Yes | Provides `registry-url: https://registry.npmjs.org` so OIDC publish works. |
+| `softprops/action-gh-release@v2` | Third-party | ~5k stars, actively maintained. Used for GitHub Release creation. **Pin to commit SHA when adopting** — see §3.6. |
+
+### 3.6 Third-party Action policy
+
+A third-party Action is acceptable when:
+
+1. Value clearly exceeds custom-bash cost (rule of thumb: replaces > 20
+   lines of reliable bash, or handles a non-trivial API edge).
+2. The Action has stars, active usage, and active maintenance (check
+   stars + last commit + open issue ratio).
+
+When introducing a new third-party Action:
+
+- Pin to commit SHA in release.yml, not floating `@vN` tag.
+- Note maintenance state (last release date, stars, known
+  advisories) in the introducing PR's description.
+
+Bash logic stays inline. `git-cliff` runs via `npx` rather than a
+wrapper Action.
+
+## 4. Release workflow (`.github/workflows/release.yml`)
+
+Triggered on push to `refs/tags/v*.*.*`. One workflow file works for
+both monorepo and single-package — `pnpm publish` invocation differs
+on one line (§3.3).
 
 ```yaml
 name: Release
@@ -160,401 +488,539 @@ on:
       - 'v*.*.*'
 
 permissions:
-  contents: write    # for GitHub Release creation
-  id-token: write    # for npm OIDC
+  contents: write    # GitHub Release creation
+  id-token: write    # npm OIDC
 
 jobs:
   publish:
     runs-on: ubuntu-latest
-    environment: npm-publish    # binds OIDC trust to a named environment
+    environment: npm-publish
     steps:
-      # 1. Checkout, set up Node + pnpm, install deps.
+      # 1. Checkout — full history so git-cliff can read tags + commits.
       - uses: actions/checkout@v6
-        with: { fetch-depth: 0 }
+        with:
+          fetch-depth: 0
+
+      # 2. Set up pnpm and Node.
       - uses: pnpm/action-setup@v6
-        with: { version: 10.33.0 }
+        with:
+          version: 10.33.0
       - uses: actions/setup-node@v6
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
 
-      # 2. Validate release metadata (tag <-> version <-> commit <-> main).
+      # 3. Validate release metadata: tag ↔ version ↔ commit ↔ main ↔ npm CLI.
       - name: Validate release metadata
         id: release
         run: |
           set -euo pipefail
           TAG="${GITHUB_REF_NAME}"
-          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]] || exit 1
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]] \
+            || { echo "Tag $TAG does not match v*.*.* format" >&2; exit 1; }
           VERSION="${TAG#v}"
-          [ "$(node -p "require('./package.json').version")" = "$VERSION" ] || exit 1
-          [ "$(git log -1 --pretty=%s)" = "chore: release v$VERSION" ] || exit 1
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+          [ "$PKG_VERSION" = "$VERSION" ] \
+            || { echo "package.json version ($PKG_VERSION) != tag ($VERSION)" >&2; exit 1; }
+          [ "$(git log -1 --pretty=%s)" = "chore: release v$VERSION" ] \
+            || { echo "Release commit message mismatch" >&2; exit 1; }
           git fetch origin main:refs/remotes/origin/main --tags
-          git merge-base --is-ancestor HEAD origin/main || exit 1
+          git merge-base --is-ancestor HEAD origin/main \
+            || { echo "Release commit is not an ancestor of origin/main" >&2; exit 1; }
+          # Require npm >= 11.5.1 for OIDC publish.
+          node -e "
+            const v=process.argv[1].split('.').map(Number);
+            const r=[11,5,1];
+            for(let i=0;i<3;i++){
+              if(v[i]>r[i])process.exit(0);
+              if(v[i]<r[i]){console.error('npm '+v.join('.')+' < 11.5.1');process.exit(1);}
+            }" "$(npm --version)"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      # 3. Validate npm CLI version (>= 11.5.1 supports OIDC publish).
-      # 4. Standard gates.
+      # 4. Install deps + run gates.
+      #    Order: build → check → test.
+      #    Reason: workspace package types resolve only after build; check / test
+      #    that span workspace boundaries depend on built dist/.
       - run: pnpm install --frozen-lockfile
+      - run: pnpm build
       - run: pnpm check
       - run: pnpm test
-      - run: pnpm build
 
-      # 5. Replace workspace:* with release version, validate the tarball.
-      - run: node scripts/prepare-npm-publish.mjs ${{ steps.release.outputs.version }}
-      - run: pnpm pack:dry   # or per-package npm pack validation
+      # 5. Publish.
+      #    Monorepo: pnpm -r publish (topology + workspace:* substitution).
+      #    Single-package: pnpm publish (drop `-r`).
+      #    pnpm recursive commands bail by default; do not pass --no-bail.
+      #    Retry-safety: if a rerun finds the version already on npm,
+      #    pnpm errors "version already exists" and the job fails fast.
+      #    No pre-existence check needed.
+      - name: Publish
+        run: pnpm -r publish --access public --no-git-checks --provenance
 
-      # 6. Sequential `npm publish` in dependency order, retry-safe.
-      #    OIDC kicks in here: the runner exchanges its GitHub OIDC token
-      #    for a short-lived npm credential at publish time; static secrets
-      #    are not needed.
-      #
-      #    Retry safety: if the version already exists on the registry
-      #    (rerun scenario), the workflow checks the registered `gitHead`
-      #    against the current commit SHA. Match → skip republish and
-      #    continue. Mismatch → fail hard (never overwrite).
-      - name: Publish workspace packages
+      # 6. Registry install smoke with retry-with-backoff.
+      #    npm CDN propagation needs ~10–60s after publish; the first
+      #    install can race with `ETARGET notarget`. Retry within a
+      #    bounded budget (default 6 × 10s = 60s).
+      - name: Registry install smoke
         env:
           VERSION: ${{ steps.release.outputs.version }}
-        run: |
-          set -euo pipefail
-          for dir in packages/core packages/data packages/cli; do
-            name="$(node -p "require('./${dir}/package.json').name")"
-            existing="$(npm view "${name}@${VERSION}" gitHead 2>/dev/null || true)"
-            if [ -n "$existing" ]; then
-              if [ "$existing" = "$GITHUB_SHA" ]; then
-                echo "${name}@${VERSION} already published with matching gitHead; skipping republish"
-                continue
-              fi
-              echo "${name}@${VERSION} already exists with gitHead $existing != $GITHUB_SHA — refusing to overwrite" >&2
-              exit 1
-            fi
-            (cd "$dir" && npm publish --access public --no-git-checks)
-          done
-
-      # 7. Registry install smoke with retry-with-backoff.
-      #    npm CDN propagation needs ~10–60s; first install can race
-      #    with `ETARGET notarget`. Wrap in `until` with backoff.
-      - name: Registry install smoke
         run: |
           set -euo pipefail
           TMP_DIR="$(mktemp -d)"
           cd "$TMP_DIR"
           npm init -y >/dev/null
+          # Replace <pkg> with your CLI entry / library entry package name.
+          PKG="<your-entry-pkg>"
           MAX_ATTEMPTS=6
           DELAY=10
           ATTEMPT=1
-          until npm install "<pkg>@${{ steps.release.outputs.version }}" >/dev/null 2>&1; do
+          until npm install "${PKG}@${VERSION}" >/dev/null 2>&1; do
             if [ "$ATTEMPT" -ge "$MAX_ATTEMPTS" ]; then
               echo "npm install failed after $MAX_ATTEMPTS attempts" >&2
               # Final attempt without redirect so the real error reaches the log.
-              npm install "<pkg>@${{ steps.release.outputs.version }}"
+              npm install "${PKG}@${VERSION}"
               exit 1
             fi
             echo "attempt $ATTEMPT failed; retrying in ${DELAY}s..."
             sleep "$DELAY"
             ATTEMPT=$((ATTEMPT + 1))
           done
-          # Then exercise the package surface (compile / type-check / etc.).
 
-      # 8. Create / update GitHub Release with CHANGELOG body.
-      - name: Create GitHub Release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ steps.release.outputs.version }}
+      # 7. Generate release notes.
+      #    `npx --yes git-cliff` fetches and runs git-cliff on demand;
+      #    first run on a fresh runner adds ~5–10 s for the binary fetch.
+      #    To eliminate per-release fetch overhead, pin a specific
+      #    git-cliff version (e.g. `npx --yes git-cliff@2.x.y`) for
+      #    deterministic cache hits.
+      - name: Generate release notes
         run: |
-          if gh release view "v$VERSION" >/dev/null 2>&1; then
-            gh release edit "v$VERSION" --notes-file CHANGELOG.md
-          else
-            gh release create "v$VERSION" --notes-file CHANGELOG.md --verify-tag
-          fi
+          set -euo pipefail
+          npx --yes git-cliff --latest --output /tmp/release-notes.md
+          echo "--- /tmp/release-notes.md ---"
+          cat /tmp/release-notes.md
+
+      # 8. Create / update the GitHub Release.
+      #    PIN TO COMMIT SHA per §3.6. Look up vetted v2 SHA at
+      #    https://github.com/softprops/action-gh-release/commits
+      #    and replace `<sha>` before merging.
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@<sha>   # v2 — replace <sha> with the pinned commit SHA
+        with:
+          body_path: /tmp/release-notes.md
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          fail_on_unmatched_files: false
 ```
 
-The workflow is **retry-safe**: if a rerun triggers and a version
-already exists on npm, the publish step (or a guard before it) checks
-the registered `gitHead` against the current commit SHA. Match → skip
-the actual republish, continue to smoke + Release. Mismatch → fail
-hard, never overwrite.
+## 5. GitHub repo configuration
 
-## Phase 3 — GitHub repo configuration (the human gate)
+Two pieces of config move the human gate from CI runtime to tag
+creation. Configure both **after** the bootstrap path validates OIDC
+end-to-end (§7.6 / §8.5).
 
-Two bits of repo settings move the human-in-the-loop from CI runtime
-to tag creation. Configure these *after* Phase 5 has proven the OIDC
-publish works end-to-end (Phase 5.4) — until then the
-`npm-publish` environment carries a required reviewer as the
-bootstrap-time safety belt.
+### 5.1 Environment `npm-publish`
 
-### 3.1 Environment `npm-publish`
-
-- **Settings → Environments → New environment** → name `npm-publish`.
-- Initially (during Phase 5 bootstrap and first OIDC publish): add the
-  publishing identity as a **Required reviewer**. Each release run
-  pauses on the publish job until you click approve. This is the
+- Settings → Environments → New environment → name `npm-publish`.
+- **During bootstrap**: add the publishing identity as **Required
+  reviewer**. Each release pauses until clicked. This is the
   bootstrap-time guard.
-- After Phase 5.4 validates the OIDC publish path, **remove the
-  required reviewer**. The CI no longer pauses.
+- **After OIDC validation (§7.6 / §8.5)**: remove the Required reviewer.
 
-### 3.2 Tag protection ruleset
+### 5.2 Tag protection ruleset
 
-- **Settings → Rules → Rulesets → New ruleset → New tag ruleset**.
-  - Name: `Protect release tags`
-  - Enforcement status: Active
-  - Target tags: `Include by pattern: v*.*.*`
-  - Bypass list: `Repository admin` (role-based)
-  - Rules: ☑ Restrict creations · ☑ Restrict updates · ☑ Restrict
-    deletions
-- Effect: only repo admin can create / update / delete `v*.*.*` tags.
-  All other tokens (collaborators, third-party CI, leaked PATs) get
-  rejected at the API level. The tag push is now a strong signal of
-  intent.
+- Settings → Rules → Rulesets → New ruleset → New tag ruleset.
 
-The combination — no in-CI reviewer + tag-creation locked to admin —
-lets the pipeline run autonomously while keeping the *decision* human.
-Rollback: re-add the required reviewer if you ever need to re-gate
-specific releases (e.g. major versions).
+| Field | Value |
+|---|---|
+| Name | `Protect release tags` |
+| Enforcement status | Active |
+| Target tags | `Include by pattern: v*.*.*` |
+| Bypass list | `Repository admin` (role-based) |
+| Rules | ☑ Restrict creations · ☑ Restrict updates · ☑ Restrict deletions |
 
-## Phase 4 — npm Trusted Publisher
+Effect: only repo admins can create / update / delete `v*.*.*` tags.
+All other tokens get rejected at the API level.
 
-A Trusted Publisher binding tells npm: "accept publish requests from
-GitHub Actions runs whose OIDC claims match this tuple". This replaces
-stored npm tokens entirely.
+## 6. npm Trusted Publisher binding
 
-The binding is **per-package**, not per-repo. Configure each
-publishable package after Phase 5.2 has executed the first manual
-publish (npm requires the package to exist before a binding can be
-attached).
+Per-package, not per-repo. Configure each publishable package on
+npmjs.com once it exists on the registry.
 
-For each publishable package on npmjs.com:
+For each publishable package:
 
 1. Package page → **Settings → Trusted Publisher → Add**.
 2. Provider: **GitHub Actions**.
-3. Owner: `<github-user-or-org>` (e.g. `LoTwT`).
-4. Repository: `<repo-name>` (e.g. `design-system`).
-5. Workflow filename: `release.yml` (must match the path under
+3. Owner: `<github-user-or-org>`.
+4. Repository: `<repo>`.
+5. Workflow filename: `release.yml` (must match path under
    `.github/workflows/`).
-6. Environment: `npm-publish` (must match the `environment:` key on
-   the publish job).
+6. Environment: `npm-publish` (must match `environment:` key on the
+   publish job).
 
-If the binding's tuple doesn't match the OIDC token's claims at publish
-time, npm rejects the publish. Diagnose by inspecting the OIDC token
-claims in the workflow log and comparing against the binding.
+A binding only attaches to an existing package. Greenfield (§7) solves
+the chicken-and-egg with manual v0.0.1 first; brownfield (§8)
+sidesteps because packages are already there.
 
-## Phase 5 — First release (manual bootstrap → OIDC validation)
+If the binding's tuple doesn't match the OIDC token's claims at
+publish time, npm rejects the publish. Diagnose by inspecting OIDC
+token claims in the workflow log against the binding.
 
-This is the one-time ladder that takes a new repo from "configured" to
-"shipping autonomously".
+---
 
-### 5.1 Pre-flight
+# Part II — Bootstrap
 
-```bash
-git status                       # clean
-git branch --show-current        # main
-git pull origin main             # synced
-gh auth status                   # admin scope on the repo
-npm whoami                       # the publishing identity
-npm --version                    # >= 11.5.1
-```
+Pick one path. Both converge into Part III after bootstrap.
 
-Have an npm 2FA device ready if your account requires it.
+## 7. Path A — Greenfield (first publish)
 
-### 5.2 Manual v0.0.1 publish
+### 7.1 Pre-flight
 
-npm requires a package to exist on the registry before its Trusted
-Publisher binding can be attached. So the first version publishes
-manually with a one-time scoped npm token, NOT via OIDC.
-
-1. **Settings → Environments → `npm-publish`** → add `NODE_AUTH_TOKEN`
-   secret containing a freshly-issued **fine-grained npm token**
-   scoped to the packages, write-only. (This token disappears in
-   step 8.)
-2. `pnpm release:bump 0.0.1` from `main`. bumpp creates the
-   `chore: release v0.0.1` commit, tags `v0.0.1`, and pushes both.
-   The tag triggers `release.yml`; that run will fail at the OIDC
-   publish step (Trusted Publisher not configured yet) — **expected,
-   ignore**.
-3. `git checkout v0.0.1` — publish from the exact tagged tree
-   (detached HEAD is intentional).
-4. `pnpm install --frozen-lockfile`
-5. `pnpm check && pnpm test && pnpm build` — same gates the CI runs;
-   if any fail here, **do not publish**, fix forward.
-6. `node scripts/prepare-npm-publish.mjs 0.0.1` — replace
-   `workspace:*` with `0.0.1`. These edits are temporary and not
-   committed.
-7. **Sequential `npm publish` in dependency order**:
-   ```bash
-   cd packages/core && npm publish --access public --no-git-checks && cd ../..
-   cd packages/data && npm publish --access public --no-git-checks && cd ../..
-   cd packages/cli  && npm publish --access public --no-git-checks && cd ../..
-   ```
-   Order matters: a downstream package's `npm install` will pull its
-   sibling deps from the registry; if the sibling isn't there yet, the
-   install fails.
-8. `git checkout -- packages/*/package.json` — restore `workspace:*`
-   so subsequent local pnpm work doesn't trip on literal-version deps.
-
-### 5.3 Configure Trusted Publisher (Phase 4 binding per package)
-
-Walk Phase 4 for each package now that v0.0.1 exists on the registry.
-
-After all bindings are in place, **revoke the one-time fine-grained
-npm token** (npmjs.com → access tokens) and **delete `NODE_AUTH_TOKEN`
-from the `npm-publish` environment** in GitHub. The pipeline now
-relies entirely on OIDC.
-
-### 5.4 v0.0.2 OIDC validation (throwaway patch)
-
-A patch whose only purpose is to prove the OIDC publish pipeline works:
-
-1. Make any trivial change on `main` (or just bump the version).
-2. `pnpm release:bump 0.0.2` from `main`.
-3. The tag push triggers `release.yml`. The publish step now runs via
-   OIDC: the runner asks GitHub for an OIDC token with the
-   `id-token: write` permission, exchanges it for a short-lived npm
-   credential, npm verifies the token's claims (repo, environment,
-   workflow filename) against each Trusted Publisher binding, and
-   the publish proceeds — no static secret involved.
-4. The workflow continues through registry install smoke and GitHub
-   Release creation.
-5. Verify the published version metadata:
-
-   ```bash
-   npm view @<scope>/<pkg>@0.0.2 version    # expected: 0.0.2
-   npm view @<scope>/<pkg>@0.0.2 gitHead    # expected: the v0.0.2 release commit SHA
-   ```
-
-   `gitHead` should equal the SHA of the `chore: release v0.0.2`
-   commit (`git rev-parse v0.0.2^{commit}` locally). If it's empty or
-   wrong, the OIDC publish ran from an unexpected tree state.
-
-### 5.5 Verification
+Run from a clean checkout of `main`.
 
 ```bash
-npm view @<scope>/<pkg>@0.0.1 version    # 0.0.1
-npm view @<scope>/<pkg>@0.0.1 gitHead    # the v0.0.1 release commit
-npm view @<scope>/<pkg>@0.0.2 version    # 0.0.2
-npm view @<scope>/<pkg>@0.0.2 gitHead    # the v0.0.2 release commit
+# Repo state.
+git status                                # Expected: working tree clean.
+git branch --show-current                 # Expected: main.
+git pull origin main                      # Sync.
+
+# GitHub auth.
+gh auth status                            # Expected: admin scope on the repo.
+
+# npm auth.
+npm whoami
+# Expected: <your-npm-username>.
+# If "npm error code ENEEDAUTH" / "not authenticated":
+#   npm login --registry=https://registry.npmjs.org
+#   # Browser opens; complete login; re-run `npm whoami`.
+
+npm --version                             # Expected: >= 11.5.1.
+
+# Have an npm 2FA device ready if your account requires it.
 ```
 
-If the `gitHead` is wrong (or empty), something in the publish
-metadata went sideways — investigate before doing more releases.
+### 7.2 Manual v0.0.1 publish
 
-### 5.6 Hardening (Phase 3 toggles)
+The first publish runs from a local terminal using your `npm whoami`
+identity. No fine-grained npm token in CI. The v0.0.1 tag's CI run will
+fail at the publish step (no Trusted Publisher binding yet) — expected;
+cancel it.
 
-Now that OIDC is proven:
+```bash
+# 1. Bump to 0.0.1 from main.
+pnpm release:bump 0.0.1
+# bumpp: updates package.json file(s), runs `pnpm changelog` (git-cliff),
+# creates `chore: release v0.0.1` commit, tags v0.0.1, pushes both.
+# Stay on main — same session, no checkout needed.
+```
 
-- Remove the required reviewer from the `npm-publish` environment
-  (Phase 3.1).
-- Add the `v*.*.*` tag protection ruleset (Phase 3.2).
+```bash
+# 2. The v0.0.1 tag push triggers release.yml. It will fail at publish
+#    (no Trusted Publisher binding). Cancel it.
+gh run list --workflow=release.yml --branch v0.0.1 --limit 1
+gh run cancel <run-id>
+```
 
-## Phase 6 — Operations and rollback
+```bash
+# 3. Reinstall deps from the lockfile, run gates.
+pnpm install --frozen-lockfile
+pnpm build                                # Must run before check / test.
+pnpm check
+pnpm test
+# If any gate fails: DO NOT publish. Fix forward in v0.0.2.
+```
 
-After Phase 5, a routine release is just:
+```bash
+# 4. Pre-publish sanity check — verify main HEAD == release commit == v0.0.1 tag.
+#    All three must hold before publishing. Any mismatch means main has drifted
+#    (e.g. someone pushed a commit between bumpp and now); STOP, investigate,
+#    do not use a detached-HEAD fallback. See §10.1 for the detached escape
+#    hatch as a troubleshooting-only path.
+git status --short                          # Expected: empty (clean tree).
+git branch --show-current                   # Expected: main.
+git describe --tags --exact-match HEAD      # Expected: v0.0.1.
+```
 
-1. `pnpm release:bump <X.Y.Z>` from `main`.
-2. Watch the workflow run if you want.
-3. Verify the published metadata and the GitHub Release:
+```bash
+# 5. Publish.
+#    Monorepo:
+pnpm -r publish --access public
+#    Single-package (scoped or unscoped):
+# pnpm publish --access public
+#
+# No `--no-git-checks`: we are on main with a clean tree and HEAD at the tag,
+# so pnpm's default git checks should all pass.
+# No `--provenance`: provenance requires OIDC context; a local publish doesn't
+# have one. v0.0.1 ships without provenance; v0.0.2+ over OIDC will have it.
+# No `--no-bail`: pnpm recursive commands bail by default; we want fail-fast
+# on partial publish failures.
+```
 
-   ```bash
-   # Per published package:
-   npm view @<scope>/<pkg>@<X.Y.Z> version    # expected: X.Y.Z
-   npm view @<scope>/<pkg>@<X.Y.Z> gitHead    # expected: release commit SHA
+### 7.3 Configure Trusted Publisher
 
-   # GitHub Release:
-   gh release view v<X.Y.Z>                   # expected: not draft, notes match CHANGELOG
-   ```
+Walk §6 for each published package now that v0.0.1 exists on the
+registry.
+
+### 7.4 Manual GitHub Release for v0.0.1
+
+The v0.0.1 CI run was cancelled, so no automated GitHub Release exists.
+Create it manually from local git-cliff output:
+
+```bash
+# From any clean working tree at HEAD = the v0.0.1 release commit on main:
+npx git-cliff --latest --output /tmp/release-notes-v0.0.1.md
+gh release create v0.0.1 \
+  --notes-file /tmp/release-notes-v0.0.1.md \
+  --title v0.0.1 \
+  --latest
+gh release view v0.0.1                    # Verify: not draft, body matches.
+```
+
+### 7.5 v0.0.2 OIDC validation (throwaway patch)
+
+Prove the OIDC publish path end-to-end with a small change.
+
+```bash
+# 1. Make any trivial change on main (docs typo / CHANGELOG fix / etc.).
+#    Commit normally with a Conventional Commits message:
+#    `docs: fix typo` etc.
+
+# 2. From main:
+pnpm release:bump 0.0.2
+# bumpp creates the release commit + tag + push.
+
+# 3. The tag push triggers release.yml. Publish step now runs via OIDC:
+#    - runner asks GitHub for an OIDC token (`id-token: write` permission)
+#    - npm verifies token claims against each Trusted Publisher binding
+#    - publish proceeds — no static secret involved
+#    - retry-with-backoff smoke, git-cliff release notes, GitHub Release
+#      creation all run automatically.
+
+# 4. Verify.
+npm view @<scope>/<pkg>@0.0.2 version     # Expected: 0.0.2.
+gh release view v0.0.2                    # Body from git-cliff --latest.
+# Provenance: expected on v0.0.2; absent on v0.0.1.
+```
+
+### 7.6 Hardening
+
+OIDC is now proven. Configure the long-term guards:
+
+- §5.1: remove the `npm-publish` Environment Required reviewer.
+- §5.2: add the `v*.*.*` tag protection ruleset.
+
+The pipeline is now fully autonomous after `pnpm release:bump`.
+
+## 8. Path B — Brownfield (existing packages)
+
+Packages already manually published. Add the pipeline without
+disrupting current habits, then upgrade to OIDC publish on the next
+routine release.
+
+### 8.1 Audit
+
+Before adding anything, capture current state:
+
+```bash
+# Already-published versions per package.
+npm view @<scope>/<pkg-a> versions
+npm view @<scope>/<pkg-b> versions
+
+# Existing workflows.
+ls .github/workflows/
+# Look for release.yml / publish.yml; decide: coexist or replace.
+
+# Existing changelog state.
+test -f CHANGELOG.md && head -30 CHANGELOG.md
+
+# Existing release tooling.
+grep -l "release\|publish\|bumpp\|changesets" package.json scripts/* 2>/dev/null
+
+# Recent commit message style (will Conventional Commits adoption be a shift?).
+git log --oneline --decorate -20
+```
+
+Decide:
+
+- Does the new pipeline replace the old release flow on day one, or
+  coexist temporarily?
+- How to seed CHANGELOG.md (§8.2).
+
+### 8.2 Add release tooling
+
+Land the pieces from §3 on a normal PR (not yet a release):
+
+- `bumpp.config.ts` (§3.1)
+- `cliff.toml` (§3.2)
+- `package.json` scripts: `release:bump`, `changelog`, `prepare`
+  (§3.1 + §3.4)
+- `simple-git-hooks` + `commitlint` config (§3.4)
+- `.github/workflows/release.yml` (§4)
+
+For CHANGELOG.md, choose one seeding strategy:
+
+```bash
+# A. Seed from full history (good for short history).
+npx git-cliff --output CHANGELOG.md
+
+# B. Seed from the most recent released tag forward.
+npx git-cliff <last-released-tag>..HEAD --output CHANGELOG.md
+# Older versions stay documented elsewhere (previous CHANGELOG / old
+# release notes).
+
+# C. Preserve existing hand-written CHANGELOG.md verbatim; future
+#    releases prepend new entries on top.
+npx git-cliff --prepend CHANGELOG.md
+```
+
+### 8.3 Configure Trusted Publisher
+
+Packages already exist on npm — no chicken-and-egg. Walk §6 for each
+published package immediately after the tooling PR merges.
+
+### 8.4 First OIDC release
+
+Pick the next routine fix / feature and ship it as the first
+OIDC-driven release:
+
+```bash
+# From main, after the tooling PR is merged:
+pnpm release:bump patch
+# Tag push triggers release.yml. Publish, smoke, release notes,
+# GitHub Release — all over OIDC, no manual publish step.
+
+# Verify.
+npm view @<scope>/<pkg>@<new-version> version
+gh release view v<new-version>
+```
+
+### 8.5 Hardening
+
+Same as §7.6:
+
+- Remove the `npm-publish` Environment Required reviewer.
+- Add the `v*.*.*` tag protection ruleset.
+
+---
+
+# Part III — Operations
+
+## 9. Routine release
+
+After bootstrap, a release is just:
+
+```bash
+# From main.
+pnpm release:bump patch                   # or `minor` / `major` / `1.2.3`.
+# Watch the workflow run if you want:
+gh run watch
+```
+
+**Same pipeline for all version classes**: patch, minor, and major
+releases flow through the same CI pipeline; the only difference is the
+version number the tag points to. The tag regex, release-commit
+message, publish command, and git-cliff invocation are all
+version-agnostic. Semver decisions (is this really a major?) belong in
+PR review upstream, not at release time.
+
+Acceptance criteria after every release (any version class):
+
+```bash
+# 1. npm registry has the version.
+npm view @<scope>/<pkg>@<X.Y.Z> version       # Expected: X.Y.Z.
+
+# 2. GitHub Release exists, body matches CHANGELOG.
+gh release view v<X.Y.Z>                      # Expected: not draft, body present.
+
+# 3. Provenance attestation present (for OIDC-published versions, i.e. v0.0.2+).
+npm view @<scope>/<pkg>@<X.Y.Z> --json | jq '.dist.attestations'
+# Expected: an object with at least a "provenance" attestation.
+# Absent for v0.0.1 (manual local publish has no OIDC context).
+```
+
+## 10. Rollback
 
 When something goes wrong, **fix forward**. `npm deprecate
-<pkg>@<bad-version> "use <good-version>"`, then ship the next patch.
-Never `npm unpublish` — the 72-hour window is narrow, the unpublish
-makes the version permanently unusable for any consumer that already
-has it in a lockfile, and the npm registry's audit semantics treat it
-as a hard incident.
+<pkg>@<bad> "use <good>"`, then ship the next patch. Never
+`npm unpublish` outside a documented incident response — the 72-hour
+window is narrow, the unpublished slot stays permanently unusable, and
+npm treats it as a hard incident.
 
-### 6.1 Per-step rollback table
+### 10.1 Per-step rollback table
 
-| Step | Failure | Rollback / recovery |
+| Step | Failure | Recovery |
 |---|---|---|
-| `release:bump` push fails | retry `git push && git push --tags` |
-| Tag pushed, CI hasn't started yet | `git push --delete origin v...` + `git revert <bump-commit>` + push |
-| `prepare-npm-publish.mjs` reports version mismatch | `release:bump` didn't update package.json files; rerun `release:bump` |
-| Bootstrap `npm publish` errors | retry the same command (idempotent for the same tarball; "version already exists" means publish actually succeeded) |
-| Bootstrap: package N fails after 1..N-1 succeeded | choose: fix and continue with N..end, OR `npm deprecate` 1..N-1 and prep next patch |
-| OIDC publish fails (claims mismatch) | check workflow `permissions:`, `environment:`, npm CLI version, Trusted Publisher binding; rerun the failed jobs |
-| Registry smoke `notarget` (pre-Phase 2 retry-with-backoff) | rerun the failed jobs; the workflow's `gitHead` retry-safety logic skips republish |
-| Trusted Publisher binding wrong | edit on npmjs.com; affects the *next* release only (already-published versions are unaffected) |
-| Tag pushed by non-admin (after Phase 3 ruleset) | rejected by GitHub at the push API; nothing to roll back |
-| Production npm version turns out to be broken | `npm deprecate <pkg>@<bad-version> "use <good>"` + ship next patch with the fix |
+| `release:bump` push fails | Retry `git push && git push --tags`. If pushed without tag: `git push origin v<X.Y.Z>`. |
+| Tag pushed, CI hasn't started yet | `git push origin --delete v<X.Y.Z>` + `git revert <bump-commit>` + push; or fix-forward via v<X.Y.Z+1>. |
+| `release:bump` exited mid-flight (workdir dirty + local tag) | `git checkout HEAD -- package.json packages/*/package.json && git tag -d v<X.Y.Z>`; rerun `release:bump`. |
+| §7.2 sanity check fails: `main` HEAD has drifted from the tag commit (someone pushed) | **Default**: investigate the drift, coordinate with whoever pushed, prefer fix-forward via v<X.Y.Z+1> or revert the accidental commit. Only when you have confirmed no commits on `main` need to be preserved, a hard reset (`git reset --hard v<X.Y.Z>` + `git push --force-with-lease origin main`) is acceptable. **Troubleshooting-only escape hatch** (use sparingly): `git checkout v<X.Y.Z>` → re-verify all three pre-checks (`git status --short` empty + `git describe --tags --exact-match HEAD` = `v<X.Y.Z>` + `npm view <pkg>@<X.Y.Z> version` empty) → publish with detached-HEAD flag set, e.g. `pnpm -r publish --access public --no-git-checks` (monorepo) or `pnpm publish --access public --no-git-checks` (single-package). Not the default path; do not use without all three pre-checks. |
+| Stale remote tag from a past dry-run | `git push origin --delete v<X.Y.Z>` (deleting tag ref; no force-push needed). |
+| `pnpm publish` fails on package N after 1..N-1 succeeded | Investigate before rerun. Same tarball is idempotent; "version already exists" means earlier publishes succeeded. Choose: continue with N..end, or `npm deprecate` 1..N-1 and prep next patch. |
+| OIDC publish fails (claims mismatch) | Check workflow `permissions:`, `environment:`, npm CLI version, Trusted Publisher binding tuple; rerun failed jobs. |
+| Registry install smoke exhausts retries | Rerun the failed jobs after a few minutes. If persistent, manual `npm install` from a workstation to confirm propagation; consider raising `MAX_ATTEMPTS`. |
+| `git-cliff --latest` output unexpected | Check `cliff.toml` `commit_parsers`, ensure tag pattern matches. Fix-forward via docs PR + next patch. |
+| Trusted Publisher binding wrong | Edit on npmjs.com; affects the *next* release only. Already-published versions are unaffected. |
+| Tag pushed by non-admin (after §5.2 ruleset) | Rejected by GitHub at the push API; nothing to roll back. |
+| Production npm version turns out broken | `npm deprecate <pkg>@<bad> "use <good>"` + ship next patch. |
 
-### 6.2 Generic principles
+### 10.2 Generic principles
 
-1. **Never `npm unpublish`** unless explicitly recommended by an
-   incident runbook owner. `npm deprecate` is the standard fix-forward.
-2. **Fix-forward over rollback**: a bad version becomes evidence for
+1. **Never `npm unpublish`** unless an incident runbook owner
+   recommends it. `npm deprecate` is the fix-forward primitive.
+2. **Fix-forward over rollback**: a bad version becomes evidence in
    the next patch's CHANGELOG.
-3. **If two of N packages published and the third failed**, *stop*.
-   Don't blindly retry the failing one until you understand whether
-   the success was real (`npm view <pkg>@<version>`) and whether the
-   monorepo state on disk still matches. Then choose: continue, or
+3. **If two of N packages published and the third failed, stop**.
+   Confirm earlier successes (`npm view <pkg>@<version>`) and the
+   on-disk monorepo state before deciding to continue or
    deprecate-and-bump.
 4. **Suspicious states deserve a pause**: copy verbatim error text,
-   re-read the release log around the failure, talk to your reviewer
+   re-read the release log around the failure, talk to a reviewer
    before retrying more than once.
 
-### 6.3 When NOT to walk this on autopilot
+---
+
+# Part IV — Reference
+
+## 11. Glossary
+
+| Term | Meaning |
+|---|---|
+| OIDC | OpenID Connect. GitHub Actions can mint short-lived ID tokens with claims about repo / workflow / environment. npm Trusted Publisher accepts these as a publish credential, eliminating stored tokens. |
+| Trusted Publisher | npm setting on a package, binding it to a (provider, owner, repo, workflow, environment) tuple. A publish only succeeds if the OIDC token's claims match. |
+| Provenance attestation | npm's signed metadata about how a package was built. Generated when publishing under OIDC with `--provenance`. Visible on the npm package page. |
+| Conventional Commits | Commit message convention parsed by git-cliff to bucket changes into Added / Fixed / Changed / etc. |
+| `gitHead` | npm's per-version metadata field recording the commit SHA the publish ran from. **Not** written by `pnpm publish`. This pipeline does not rely on it; traceability runs through the GitHub release tag. |
+| Environment (GitHub) | A named scope inside a repo's Actions config carrying secrets, deployment branches, required reviewers, and OIDC sub-claims. The publish job's `environment:` key binds to one. |
+| Tag protection ruleset | A GitHub repo Rule restricting who can create / update / delete tags matching a pattern. Used here to make `v*.*.*` tag pushes admin-only. |
+| `npm deprecate` | Marks a published version as discouraged. Consumers see a deprecation warning at install time. The version stays installable. The standard "this release was bad, use a newer one" signal. |
+| `npm unpublish` | Removes a published version from the registry. Allowed within 72 hours, only when no other package depends on it, and the slot stays permanently unusable. **Do not use** as routine rollback. |
+
+## 12. Cross-links
+
+- bumpp: <https://github.com/antfu-collective/bumpp>
+- git-cliff: <https://github.com/orhun/git-cliff> · config:
+  <https://git-cliff.org/docs/configuration>
+- pnpm publish: <https://pnpm.io/cli/publish>
+- GitHub Actions OIDC: <https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect>
+- npm Trusted Publisher: <https://docs.npmjs.com/trusted-publishers>
+- Conventional Commits: <https://www.conventionalcommits.org/>
+- commitlint: <https://commitlint.js.org/>
+- simple-git-hooks: <https://github.com/toplenboren/simple-git-hooks>
+- softprops/action-gh-release: <https://github.com/softprops/action-gh-release>
+
+## 13. When NOT to walk this on autopilot
 
 - Multi-package repos where the publishable set changes between
-  releases — keep `prepare-npm-publish.mjs`'s allowlist in sync.
+  releases — keep `bumpp.config.ts` `files` list in sync.
 - First publish under a new npm scope — needs scope-owner privileges
   (one-time, separate from this pipeline).
 - Major version bumps — semver review belongs in PR review, not at
   release time. The pipeline is a delivery channel, not a quality
   gate for the change itself.
 - Packages with native binaries / per-platform `optionalDependencies`
-  — the linear `npm publish` script needs per-platform jobs and a
+  — the linear `pnpm publish` flow needs per-platform jobs and a
   matrix; out of scope for this template.
-
-## Worked deployments
-
-- **`LoTwT/design-system`** — Phases 0–2 in place from the start;
-  Phase 5.2 v0.0.1 manual bootstrap on 2026-05-08; Phase 5.3 + 5.4
-  v0.0.2 OIDC validation on 2026-05-10 (PR #12 merged as
-  `a3a9b18`); Phase 3.1 reviewer removed + Phase 3.2 tag ruleset on
-  2026-05-10 (decision DS-D-10, decisions log entry merged in PR
-  #14); Phase 2 step 7 retry-with-backoff in `release.yml` on
-  2026-05-10 (DD-012, PR #13 merged as `1f9bf89e`).
-- **`LoTwT/fairy`** — Phases 0–2 in place; Phase 5.2 v0.0.1 manual
-  bootstrap **paused** on 2026-05-10 to consolidate this runbook
-  before proceeding. Phases 5.3 + 5.4 + 3 will follow the
-  design-system pattern.
-
-## Glossary
-
-| Term | Meaning |
-|---|---|
-| OIDC | OpenID Connect. GitHub Actions can mint short-lived ID tokens for the running job, claiming repo / workflow / environment metadata. npm Trusted Publisher accepts these as a publish credential, eliminating stored tokens. |
-| Trusted Publisher | npm setting on a package, binding it to a (provider, owner, repo, workflow, environment) tuple. A publish only succeeds if the OIDC token's claims match the binding. |
-| `gitHead` | npm's per-version metadata field recording the commit SHA the publish ran from. Used as a retry-safety check in CI: if the version already exists with the correct `gitHead`, the rerun skips publish and continues. |
-| Environment (GitHub) | A named scope inside a repo's Actions config that can carry secrets, deployment branches, required reviewers, and (for OIDC) sub-claims. The publish job's `environment:` key binds it to one. |
-| Fine-grained npm token | A scoped, expirable npm token used during Phase 5.2 bootstrap only; replaced by OIDC after Phase 5.4. |
-| `npm deprecate` | Marks a published version as discouraged. Consumers see a deprecation warning at `npm install` time. The version stays installable; this is the standard "this release was bad, use a newer one" signal. |
-| `npm unpublish` | Removes a published version from the registry. Allowed only within 72 hours of publish, only when no other package depends on it, and the slot stays permanently unusable afterward. **Do not use** as a routine rollback. |
-
-## QA testing conventions
-
-The project's smoke-testing conventions live in
-`LoTwT/ayingott.me:docs/qa/testing-conventions.md` (merged via
-ayingott.me PR #17, commit `5c4fccbe`). Two of those conventions are
-load-bearing for this runbook:
-
-- **Registry probes use npm tooling**, not `curl`. Use
-  `npm view <pkg>@<version> version` and `npm view <pkg>@<version> gitHead`
-  against the live registry, not `curl` against npm's HTTP API
-  directly. The retry-with-backoff smoke step in Phase 2 also uses
-  npm tooling (`npm install`) to probe installability; the metadata
-  checks (`npm view ... version` / `npm view ... gitHead`) run
-  separately in Phase 5 and Phase 6.
-- **HTTP user-facing route smoke sends `Accept: text/html`** so
-  content-negotiated handlers route to the HTML branch instead of the
-  JSON / API branch. This convention does **not** apply inside this
-  runbook — none of the smoke steps here probe HTTP user-facing routes
-  — but it's worth knowing when porting this pipeline to a project
-  that also serves an SSR app.
+- Independent versioning across packages in one workspace — this
+  pipeline assumes synchronized versions (bumpp updates all
+  publishable packages together). For independent versions, consider
+  changesets instead; that's a different runbook.
