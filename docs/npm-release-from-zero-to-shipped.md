@@ -291,7 +291,8 @@ Minimal wrapper shape:
 
 ```js
 // scripts/release-bump.mjs
-import { execFileSync } from "node:child_process"
+import { execFileSync, execSync } from "node:child_process"
+import { resolve } from "node:path"
 import { versionBump } from "bumpp"
 
 const releaseArg = process.argv[2]
@@ -305,11 +306,28 @@ if (branch !== "main") {
 
 await versionBump({
   release: releaseArg ?? "patch",
+  // Same constraint as the default `bump.config.ts`: CHANGELOG.md is NOT
+  // listed here. It's added to bumpp's staging via `execute` below; listing
+  // it in `files` would let bumpp rewrite past version headers.
   files: ["package.json", "packages/*/package.json"],
   commit: true,
   tag: true,
   push: true,
-  execute: "pnpm changelog",
+  // Mirror the default config's execute-function pattern so CHANGELOG.md
+  // ships in the release commit without falling into the rewrite trap.
+  execute: (operation) => {
+    execSync("pnpm changelog", {
+      cwd: operation.options.cwd,
+      stdio: "inherit",
+    })
+
+    operation.update({
+      updatedFiles: [
+        ...operation.state.updatedFiles,
+        resolve(operation.options.cwd, "CHANGELOG.md"),
+      ],
+    })
+  },
 })
 ```
 
