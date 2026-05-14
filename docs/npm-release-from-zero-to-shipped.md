@@ -33,9 +33,9 @@ pnpm release:bump 1.2.3          # explicit version
 #    - validates metadata
 #    - runs gates (build → check → test)
 #    - publishes via `pnpm publish` over OIDC (no static secret)
-#    - runs registry-install smoke with retry-with-backoff
 #    - generates release notes via `git-cliff --latest`
 #    - creates the GitHub Release
+#    - runs post-publish registry-install smoke with retry-with-backoff
 
 # 3. No reviewer approval in CI. The human gate is upstream:
 #    only repo admins can push `v*.*.*` tags via a tag-protection ruleset.
@@ -182,6 +182,12 @@ git-cliff parses Conventional Commits to bucket entries into Added /
 Fixed / Changed. Common types: `feat:`, `fix:`, `docs:`, `chore:`,
 `refactor:`, `test:`, `perf:`, `style:`. `feat!:` / `fix!:` denote a
 breaking change. PR titles squash-merge into Conventional Commits.
+
+Choose the commit type by release-visible value, not only by the file
+paths changed. Ordinary test-only work can stay `test:` and be skipped
+from CHANGELOG, but a project-specific test fixture that advertises a
+new public contract may deserve a release-note type/scope such as
+`feat(<scope>):`.
 
 Lint enforcement via `commitlint` + `simple-git-hooks` (§3.4).
 
@@ -376,6 +382,8 @@ trim = true
 conventional_commits = true
 filter_unconventional = false
 commit_parsers = [
+  # Add project-specific release-visible scopes above the generic parser
+  # when needed, e.g. { message = "^feat\\(<scope>\\)", group = "<Group>" }.
   { message = "^feat",     group = "Added" },
   { message = "^fix",      group = "Fixed" },
   { message = "^docs",     group = "Documentation" },
@@ -604,64 +612,33 @@ jobs:
       #    pnpm errors "version already exists" and the job fails fast.
       #    No pre-existence check needed.
       - name: Publish
+        id: publish
         run: pnpm -r publish --access public --no-git-checks
 
-      # 6. Registry install smoke with retry-with-backoff.
-      #    npm CDN propagation usually completes in 10–60s after publish
-      #    but can tail into a few minutes. The first install attempt
-      #    can race with `ETARGET notarget`. Retry within a bounded
-      #    budget: 10 attempts × 30s delay = ~5 minutes total
-      #    (9 sleeps × 30s + per-attempt install time).
-      #
-      #    Note: hitting the cap means propagation timed out, NOT that
-      #    the publish failed. Inspect `npm view <pkg>@<version> version`
-      #    out-of-band before rerunning the job — if the version exists,
-      #    the publish itself succeeded and only the smoke step needs a
-      #    retry.
-      - name: Registry install smoke
-        env:
-          VERSION: ${{ steps.release.outputs.version }}
-        run: |
-          set -euo pipefail
-          TMP_DIR="$(mktemp -d)"
-          cd "$TMP_DIR"
-          npm init -y >/dev/null
-          # Replace <pkg> with your CLI entry / library entry package name.
-          PKG="<your-entry-pkg>"
-          MAX_ATTEMPTS=10
-          DELAY=30
-          ATTEMPT=1
-          until npm install "${PKG}@${VERSION}" >/dev/null 2>&1; do
-            if [ "$ATTEMPT" -ge "$MAX_ATTEMPTS" ]; then
-              echo "registry install smoke timed out after $MAX_ATTEMPTS attempts (~$((MAX_ATTEMPTS * DELAY))s). Publish may still have succeeded; verify with: npm view ${PKG}@${VERSION} version" >&2
-              # Final attempt without redirect so the real error reaches the log.
-              npm install "${PKG}@${VERSION}"
-              exit 1
-            fi
-            echo "attempt $ATTEMPT failed; retrying in ${DELAY}s..."
-            sleep "$DELAY"
-            ATTEMPT=$((ATTEMPT + 1))
-          done
-
-      # 7. Generate release notes.
+      # 6. Generate release notes.
+      #    Release creation is gated by publish success, not by registry
+      #    propagation. npm has already accepted the immutable version; create
+      #    the GitHub Release before post-publish smoke so propagation tail
+      #    cannot force a manual Release recovery.
       #    `npx --yes git-cliff` fetches and runs git-cliff on demand;
-      #    first run on a fresh runner adds ~5–10 s for the binary fetch.
-      #    To eliminate per-release fetch overhead, pin a specific
-      #    git-cliff version (e.g. `npx --yes git-cliff@2.x.y`) for
-      #    deterministic cache hits.
+      #    pin a specific git-cliff version (e.g. `npx --yes git-cliff@2.x.y`)
+      #    if the repo wants deterministic binary selection.
       - name: Generate release notes
+        id: release_notes
+        if: always() && steps.publish.outcome == 'success'
         run: |
           set -euo pipefail
           npx --yes git-cliff --latest --output /tmp/release-notes.md
           echo "--- /tmp/release-notes.md ---"
           cat /tmp/release-notes.md
 
-      # 8. Create / update the GitHub Release.
-      #    PIN TO COMMIT SHA per §3.6. Look up vetted v2 SHA at
+      # 7. Create / update the GitHub Release.
+      #    PIN TO COMMIT SHA per §3.6. Look up the vetted SHA at
       #    https://github.com/softprops/action-gh-release/commits
       #    and replace `<sha>` before merging.
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@<sha>   # v2 — replace <sha> with the pinned commit SHA
+        if: always() && steps.publish.outcome == 'success' && steps.release_notes.outcome == 'success'
+        uses: softprops/action-gh-release@<sha>   # replace <sha> with the pinned commit SHA
         with:
           body_path: /tmp/release-notes.md
           tag_name: ${{ github.ref_name }}
@@ -669,6 +646,85 @@ jobs:
           draft: false
           prerelease: false
           fail_on_unmatched_files: false
+
+      # 8. Post-publish registry install smoke with retry-with-backoff.
+      #    npm CDN propagation usually completes in 10-60s after publish, but
+      #    can tail into several minutes. Smoke is intentionally post-release:
+      #    publish success is enough to create the GitHub Release, while a
+      #    failed smoke keeps the workflow red so QA can distinguish
+      #    propagation lag from a real install/runtime failure.
+      - name: Registry install smoke
+        if: always() && steps.publish.outcome == 'success'
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          set -euo pipefail
+          TMP_DIR="$(mktemp -d)"
+          cd "$TMP_DIR"
+          npm init -y >/dev/null
+          # Replace with every package that must be user-installable together.
+          PACKAGES=(
+            "<your-entry-pkg>"
+            # "@<scope>/<sibling-pkg>"
+          )
+          INSTALL_SPECS=()
+          for PACKAGE in "${PACKAGES[@]}"; do
+            INSTALL_SPECS+=("${PACKAGE}@${VERSION}")
+          done
+          MAX_ATTEMPTS=20
+          DELAY=60
+          ATTEMPT=1
+
+          while true; do
+            MISSING=()
+            for PACKAGE in "${PACKAGES[@]}"; do
+              if PACKAGE_VERSION="$(npm view "${PACKAGE}@${VERSION}" version 2>/dev/null)"; then
+                echo "npm registry has ${PACKAGE}@${PACKAGE_VERSION}"
+              else
+                MISSING+=("$PACKAGE")
+              fi
+            done
+
+            if [ "${#MISSING[@]}" -eq 0 ]; then
+              if npm install "${INSTALL_SPECS[@]}" >/dev/null 2>&1; then
+                echo "npm install succeeded on attempt $ATTEMPT"
+                break
+              fi
+              echo "npm install attempt $ATTEMPT failed after all package versions were visible; retrying in case tarball propagation is lagging..."
+              rm -rf node_modules package-lock.json
+            else
+              echo "npm registry propagation attempt $ATTEMPT missing: ${MISSING[*]}"
+            fi
+
+            if [ "$ATTEMPT" -ge "$MAX_ATTEMPTS" ]; then
+              {
+                echo "### Registry install smoke failed"
+                echo ""
+                echo "- Version: ${VERSION}"
+                echo "- Attempts: ${MAX_ATTEMPTS}"
+                echo "- Delay: ${DELAY}s"
+                echo "- Missing packages on final attempt: ${MISSING[*]:-none}"
+                echo ""
+                echo "The publish step succeeded and the GitHub Release was already created. Treat this as a post-publish consumer smoke failure: verify npm package versions, provenance, and a fresh install before declaring release-ready."
+              } >> "$GITHUB_STEP_SUMMARY"
+              echo "registry install smoke timed out after $MAX_ATTEMPTS attempts (~$((MAX_ATTEMPTS * DELAY))s). Publish succeeded and GitHub Release creation already ran; verify with npm view/provenance/fresh install before declaring release-ready." >&2
+              echo "Final npm view diagnostics:" >&2
+              for PACKAGE in "${PACKAGES[@]}"; do
+                npm view "${PACKAGE}@${VERSION}" version || true
+              done
+              echo "Final npm install diagnostics:" >&2
+              npm install "${INSTALL_SPECS[@]}"
+              exit 1
+            fi
+            echo "waiting ${DELAY}s before retry..."
+            sleep "$DELAY"
+            ATTEMPT=$((ATTEMPT + 1))
+          done
+
+          # Add project-specific consumer checks here, for example:
+          # - import the main library export;
+          # - run the installed CLI --help;
+          # - verify bundled JSON/data subpath exports.
 ```
 
 ## 5. GitHub repo configuration
@@ -948,8 +1004,8 @@ OIDC-driven release:
 ```bash
 # From main, after the tooling PR is merged:
 pnpm release:bump patch
-# Tag push triggers release.yml. Publish, smoke, release notes,
-# GitHub Release — all over OIDC, no manual publish step.
+# Tag push triggers release.yml. Publish, GitHub Release, then
+# post-publish registry smoke — all over OIDC, no manual publish step.
 
 # Verify.
 npm view @<scope>/<pkg>@<new-version> version
@@ -998,6 +1054,13 @@ gh release view v<X.Y.Z>                      # Expected: not draft, body presen
 npm view @<scope>/<pkg>@<X.Y.Z> --json | jq '.dist.attestations'
 # Expected: an object with at least a "provenance" attestation.
 # Absent for v0.0.1 (manual local publish has no OIDC context).
+
+# 4. Fresh install / import / CLI smoke passes.
+# If CI post-publish smoke timed out, do this from a clean temp directory
+# before declaring release-ready.
+tmp="$(mktemp -d)" && cd "$tmp" && npm init -y
+npm install @<scope>/<pkg>@<X.Y.Z>
+# Then run project-specific import / CLI checks.
 ```
 
 ## 10. Rollback
@@ -1019,7 +1082,7 @@ npm treats it as a hard incident.
 | Stale remote tag from a past dry-run | `git push origin --delete v<X.Y.Z>` (deleting tag ref; no force-push needed). |
 | `pnpm publish` fails on package N after 1..N-1 succeeded | Investigate before rerun. Same tarball is idempotent; "version already exists" means earlier publishes succeeded. Choose: continue with N..end, or `npm deprecate` 1..N-1 and prep next patch. |
 | OIDC publish fails (claims mismatch) | Check workflow `permissions:`, `environment:`, npm CLI version, Trusted Publisher binding tuple; rerun failed jobs. |
-| Registry install smoke exhausts retries | Rerun the failed jobs after a few minutes. If persistent, manual `npm install` from a workstation to confirm propagation; consider raising `MAX_ATTEMPTS`. |
+| Registry install smoke exhausts retries | Publish already succeeded and the GitHub Release should already exist. Do **not** blindly rerun the same tag: reruns may fail earlier with "version already exists". Verify `npm view <pkg>@<version> version`, npm provenance / attestations, and a fresh workstation install + import / CLI smoke. If those pass, record QA release-readiness as pass and track the smoke timeout as pipeline debt. If install/runtime still fails after propagation, fix-forward with the next patch. |
 | `git-cliff --latest` output unexpected | Check `cliff.toml` `commit_parsers`, ensure tag pattern matches. Fix-forward via docs PR + next patch. |
 | Trusted Publisher binding wrong | Edit on npmjs.com; affects the *next* release only. Already-published versions are unaffected. |
 | Tag pushed by non-admin (after §5.2 ruleset) | Rejected by GitHub at the push API; nothing to roll back. |
