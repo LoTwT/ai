@@ -1,15 +1,12 @@
-# Agent Team
+# Agent Team (v1, superseded)
 
-> **Notice**: As of 2026-05-18, this document has been superseded by the v2 canonical agent organization structure under [`agent-org-structure/`](agent-org-structure/).
+> **Status**: Superseded by `v2-2026-05-18-agent-org.md` on 2026-05-18.
 >
-> - **Current canonical**: [`agent-org-structure/v2-2026-05-18-agent-org.md`](agent-org-structure/v2-2026-05-18-agent-org.md)
-> - **v1 historical archive**: [`agent-org-structure/v1-agent-team.md`](agent-org-structure/v1-agent-team.md)
->
-> The v1 content below is preserved at this path for backward compatibility with external references; new readers should consult the v2 canonical document.
+> This version is preserved as the v1 historical snapshot of the 4-role canonical team. The current canonical organization structure (6 roles + shared operating rules + deployment SOP) lives in v2.
 
 ---
 
-# Agent Team Roster (v1, preserved for backward-compat reference)
+# Agent Team Roster
 
 这份文档用于持久化组件开发中的 agent team 配置，包括每个 agent 的职责边界、默认发言策略，以及 Max-Ceiling / Default 两档推荐模型。
 
