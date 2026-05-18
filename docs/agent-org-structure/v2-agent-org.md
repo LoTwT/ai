@@ -330,7 +330,7 @@ Example: `Project context: project = fairy; domain = ZZZ damage calculator and A
 
 This reduces context-recovery cost at the start of new conversations, without polluting the role contract proper. The project-context line is **not** part of the role definition and should be maintained per project, separately from this document.
 
-Phase or stage information is intentionally excluded from this layer to avoid stale-state drift. Volatile per-project status belongs in the project's own channel pinned messages or repo docs (e.g., the `#{project}` channel's pinned message, or a per-project decisions log such as `docs/decisions/index.md`), not in the agent's deployed prompt.
+Phase or stage information is intentionally excluded from this layer to avoid stale-state drift. Volatile per-project status belongs in the project's own channel pinned messages or repo docs (e.g., the `#{project}` channel's pinned message, or a per-project decisions log such as `docs/decisions/index.md`), not in the agent's frozen Role Contract section.
 
 ### 5.5 V1.x — Recommended automation
 
