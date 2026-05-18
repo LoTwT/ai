@@ -292,7 +292,7 @@ For an agent that already has an established `MEMORY.md` and accumulated working
 | Frozen Role Contract (between markers) | **Overwrite atomically**. Replace the entire block, including marker line, with the newly composed contract. | The frozen section is the deployment invariant; there is no value in keeping a prior version. |
 | Active Context, Key Knowledge, notes | **Patch in place; do not overwrite**. Edit specific entries; preserve the agent's recovered working state. | Accumulated working context is high-value and re-deriving it from chat history is costly. |
 | Stale content | **Mark "superseded by …"** in place, or move to `notes/superseded.md` / `notes/archive/…`. Never silently delete. | Preserves history trace; future recovery can still consult it. |
-| Project-level notes files (e.g., `notes/<project>.md`) | **Append or patch**. Do not recreate. | Same as above. |
+| Project-level notes files (e.g., `notes/<project>.md`) | **Append or patch**. Do not recreate. See the role-tier transition rule below for the distinct `notes/archive/<role>-<project>-internal.md` path used when a role narrows. | Same as above. |
 
 **Role-tier transitions (special case)**. When a cross-project catch-all agent narrows to a project-tier role (e.g., `@UX` → `@UX-fairy`), or when the new role removes a domain the old agent owned, project-internal knowledge that becomes out-of-scope for the new role must be archived rather than deleted:
 
