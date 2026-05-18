@@ -240,9 +240,9 @@ For every deployed agent (org-level or project-tier), the deployment author prod
 
 <§3.0 Shared operating rules verbatim>
 
-<§3.1–§3.6 role block, with `{A}` substituted for project-tier roles>
+<Optional project context one-liner, see §5.4 — project-tier roles only>
 
-<Optional project context one-liner, see §5.4>
+<§3.1–§3.6 role block, with `{A}` substituted for project-tier roles>
 
 <!-- ROLE-CONTRACT-END -->
 
@@ -265,12 +265,12 @@ The frozen Role Contract section is delimited by HTML comment markers and a visi
 
 For a brand-new agent that has no prior `MEMORY.md` or workspace state:
 
-1. **Compose the frozen Role Contract section**:
+1. **Compose the frozen Role Contract section** (in this order: `§3.0` → optional project context → role block):
    - Start with `§3.0` verbatim.
+   - Optionally insert the one-line project context block (see §5.4). Project-tier roles only.
    - Append the appropriate role block (`§3.1` Chief / `§3.2` ChiefDesigner / `§3.3` PM / `§3.4` UX / `§3.5` TL / `§3.6` QA).
    - For project-tier roles only: Find-Replace `{A}` with the project identifier and replace project-tier handle stubs (`@PM-{A}`, `@UX-{A}`, `@TL-{A}`, `@QA-{A}`) with concrete handles (e.g., `@PM-fairy`).
    - For org-level roles: skip substitution; the role block contains no `{A}`.
-   - Optionally append a one-line project context (see §5.4).
 2. **Wrap in markers and admonition**: insert the section between `<!-- ROLE-CONTRACT-START ... -->` and `<!-- ROLE-CONTRACT-END -->`, with the source-traceability metadata (commit SHA + date) in the start marker, and the visible `⚠️ Do not edit` admonition immediately after the heading.
 3. **Write `MEMORY.md`**: place the frozen Role Contract section at the top of the new `MEMORY.md`, followed by empty `## Active Context` and `## Key Knowledge` headings for the agent to fill in over time.
 4. **Write the Slock description**: a short identity signature per §5.1 (e.g., `PM · fairy`).
@@ -353,7 +353,7 @@ A deployed agent passes deployment review if **all** of the following hold:
 
 1. **Slock description** is a short identity signature per §5.1 (role · project for project-tier; role for org-level). It does not contain a full role contract.
 2. **`MEMORY.md` has a frozen Role Contract section at the top**, delimited by `<!-- ROLE-CONTRACT-START ... -->` and `<!-- ROLE-CONTRACT-END -->` markers with source traceability (commit SHA + date) and a visible `⚠️ Do not edit` admonition.
-3. **The frozen Role Contract section equals** `§3.0` + the deployed role block (`§3.1`–`§3.6`) + optional project context line. For project-tier roles, `{A}` is fully substituted and project-tier handles are concrete. For org-level roles, the section contains no `{A}`.
+3. **The frozen Role Contract section equals** `§3.0` + optional project context line (project-tier roles only) + the deployed role block (`§3.1`–`§3.6`), in that order. For project-tier roles, `{A}` is fully substituted and project-tier handles are concrete. For org-level roles, the section contains no `{A}` and no project context line.
 4. **Mutable sections are preserved** (for migration only): `Active Context`, `Key Knowledge`, and notes that existed before the migration are still present and have not been bulk-deleted; stale items are either edited in place with a "superseded by …" pointer or moved to `notes/superseded.md` / `notes/archive/…`.
 5. **Generator (or manual SOP) output is auditable**: at least an artifact bundle, dry-run report, or migration diff is reviewable before any content is written into Slock or the agent's workspace.
 6. **Backup exists** (for migration only): the prior `MEMORY.md` and `notes/` have been committed to a stable location before the migration patch was applied.
