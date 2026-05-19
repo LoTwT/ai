@@ -272,12 +272,12 @@ For a brand-new agent that has no prior `MEMORY.md` or workspace state:
    - For project-tier roles only: Find-Replace `{A}` with the project identifier and replace project-tier handle stubs (`@PM-{A}`, `@UX-{A}`, `@TL-{A}`, `@QA-{A}`) with concrete handles (e.g., `@PM-fairy`).
    - For org-level roles: skip substitution; the role block contains no `{A}`.
 2. **Wrap in markers and admonition**: insert the section between `<!-- ROLE-CONTRACT-START ... -->` and `<!-- ROLE-CONTRACT-END -->`, with the source-traceability metadata (commit SHA + date) in the start marker, and the visible `⚠️ Do not edit` admonition immediately after the heading.
-3. **Write `MEMORY.md`**: place the frozen Role Contract section at the top of the new `MEMORY.md`, followed by empty `## Active Context` and `## Key Knowledge` headings for the agent to fill in over time.
-4. **Write the Slock description**: a short identity signature per §5.1 (e.g., `PM · fairy`).
-5. **Produce an auditable artifact**: capture both the description string and the `MEMORY.md` content in a deployment bundle (a single markdown file or directory) before configuring anything in Slock.
+3. **Prepare `MEMORY.md` candidate** (do not write it to the agent's workspace yet): assemble the file with the frozen Role Contract section at the top, followed by empty `## Active Context` and `## Key Knowledge` headings for the agent to fill in over time.
+4. **Prepare the new Slock description string** (do not update Slock yet): a short identity signature per §5.1 (e.g., `PM · fairy`).
+5. **Produce an auditable artifact**: capture both the candidate description string and the candidate `MEMORY.md` content in a deployment bundle (a single markdown file or directory) before configuring anything in Slock or the agent's workspace.
 6. **Validate**: confirm the bundle satisfies the acceptance criteria in §5.6.
 7. **Submit for review**: QA validates the bundle before any content is written into Slock or the agent's workspace.
-8. **Deploy**: paste the description into the Slock agent description field, and place `MEMORY.md` in the agent's workspace `cwd`.
+8. **Apply** (first real write): paste the description into the Slock agent description field, and place `MEMORY.md` in the agent's workspace `cwd`.
 
 Manual deployment must produce an auditable artifact — UI copy/paste without a captured bundle is not acceptable, because it bypasses the validation step.
 
