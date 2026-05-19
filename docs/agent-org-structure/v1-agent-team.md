@@ -1,6 +1,6 @@
 # Agent Team (v1, superseded)
 
-> **Status**: Superseded by `v2-2026-05-18-agent-org.md` on 2026-05-18.
+> **Status**: Superseded by `v2-agent-org.md` on 2026-05-18.
 >
 > This version is preserved as the v1 historical snapshot of the 4-role canonical team. The current canonical organization structure (6 roles + shared operating rules + deployment SOP) lives in v2.
 

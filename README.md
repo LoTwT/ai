@@ -9,5 +9,5 @@
 ## docs
 
 - [Claude Code 项目文件结构最佳实践](./docs/project-structure-best-practice.md)
-- [Agent Org Structure (v2)](./docs/agent-org-structure/v2-2026-05-18-agent-org.md): 组织级 agent 团队的规范文档，包含 shared operating rules、6 个角色的 prompt blocks 与部署 SOP；v1 历史归档于同目录下的 `v1-agent-team.md`。
+- [Agent Org Structure (v2)](./docs/agent-org-structure/v2-agent-org.md): 组织级 agent 团队的规范文档，包含 shared operating rules、6 个角色的 prompt blocks 与部署 SOP；v1 历史归档于同目录下的 `v1-agent-team.md`。
 - [npm Release Pipeline — From Zero To Shipped](./docs/npm-release-from-zero-to-shipped.md): npm 包从零到 OIDC 自动发版的端到端 runbook。`LoTwT/design-system` V0.0.1 / V0.0.2 是 worked example。
