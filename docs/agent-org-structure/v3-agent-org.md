@@ -246,6 +246,8 @@ Role-specific semantics for `<scope-value>` (substituted by the deployment autho
 
 `domain` is a short one-line description (e.g., `domain = high-level summary of what the project does, one line`) that aids cold-start orientation. Phase or stage information is intentionally excluded to avoid stale-state drift; volatile per-project status belongs in the project's own channel pinned messages or repo docs.
 
+The scope context line above is a **format example**, not a verbatim insertion: the deployment author MUST materialize both `<scope-value>` and `<one-line description>` to concrete values for the agent being deployed. Copying the format literally (so the deployed line contains `<scope-value>` or `<one-line description>` as text) is a deployment error.
+
 **Deployment steps**:
 
 1. **Compose** the frozen Role Contract section: `§3.0` verbatim + required scope context line + role block (`§3.1`–`§3.4`) with all placeholders substituted to concrete values.
@@ -263,7 +265,7 @@ Role-specific semantics for `<scope-value>` (substituted by the deployment autho
 
 1. Slock description is a short identity signature per the format above; it does NOT contain the full role contract.
 2. `MEMORY.md` candidate has frozen Role Contract markers (`<!-- ROLE-CONTRACT-START ... -->` / `<!-- ROLE-CONTRACT-END -->`) + `⚠️ Do not edit` admonition + source traceability (commit SHA + date) at the top.
-3. Frozen section content equals `§3.0` Shared operating rules + required scope context line + the deployed role block (in that order), with all placeholders fully substituted. The scope context line is present, its `<scope-value>` is non-empty (TL lists at least one project; UX lists projects or `cross-team`; PM/QA list scope per §4), and its `domain` is non-empty.
+3. Frozen section content equals `§3.0` Shared operating rules + required scope context line + the deployed role block (in that order), with all placeholders fully substituted. The scope context line is present, both its `scope` value (TL lists at least one project; UX lists projects or `cross-team`; PM/QA list scope per §4) and its `domain` value are concrete and non-empty — the literal strings `<scope-value>` and `<one-line description>` must not appear in the scope context line; copying the §4 format example verbatim fails this check.
 4. No residual `{role}` / `{name}` / `{project}` appears anywhere in the candidate text.
 
 **Post-Apply bootstrap check** (run at step 10, after Apply):
