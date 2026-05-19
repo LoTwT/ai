@@ -31,12 +31,12 @@ This document uses three placeholders, materialized at deployment time:
 
 - `{role}` — one of `PM`, `UX`, `TL`, `QA`.
 - `{name}` — the agent's individual name (e.g., `Alice`, `Carl`). Combined with `{role}` to form the handle `@{role}-{name}` (e.g., `@PM-Alice`).
-- `{project}` — concrete project identifier (e.g., `project-a`, `project-b`). Used in scope lines, Slock signature, and the optional project context layer; not encoded in the handle.
+- `{project}` — concrete project identifier (e.g., `project-a`, `project-b`). Used in the required scope context line, Slock signature, and any project-specific reference inside role blocks; not encoded in the handle.
 
 **Deployment-time invariants**:
 
 - Unresolved `{role}`, `{name}`, or `{project}` in a deployed frozen Role Contract section is a deployment error; the agent must not be created until substitution is resolved.
-- Cross-team roles (PM, UX, QA in the default 4-role deployment) carry one or more `{project}` references in scope; project-bounded roles (TL) carry their primary project list.
+- Cross-team roles (PM, UX, QA in the default 4-role deployment) resolve their scope context line to concrete project identifiers or to `cross-team`; project-bounded roles (TL) resolve theirs to a primary project list (see §4 scope context).
 - The handle convention is **role + individual name**; team / project membership is **not** encoded in the handle. Project scope lives in the agent's Slock signature and `MEMORY.md` frozen scope.
 
 ## 3. Role definitions
@@ -50,12 +50,12 @@ The organization has 4 roles, flat:
 | `@TL-{name}` | Project-bounded (primary ownership over one or more projects); may pair across boundary on large work | One per primary-project group. |
 | `@QA-{name}` | Cross-team (independent verifier across all projects) | One per deployment by default. |
 
-Each agent's **frozen Role Contract section** in `MEMORY.md` is `§3.0 Shared operating rules` + optional project context line (see §4) + the agent's role block (`§3.1`–`§3.4`), in that order, with placeholders substituted per §4. The agent's **Slock description** is a short identity signature pointing at the role and scope (see §4).
+Each agent's **frozen Role Contract section** in `MEMORY.md` is `§3.0 Shared operating rules` + the required scope context line (see §4) + the agent's role block (`§3.1`–`§3.4`), in that order, with placeholders substituted per §4. The agent's **Slock description** is a short identity signature pointing at the role and scope (see §4).
 
 ### 3.0 Shared operating rules (deployment-injected before each role block)
 
 ```
-Prepended to each role block at deployment. Any unresolved placeholder ({role}, {name}, {project}) is a deployment error.
+Prepended to each role block at deployment. Any unresolved placeholder for role, individual name, or project identifier in the deployed text is a deployment error.
 
 **Default**: unless your role block specifies a different default, default to silent observation. Do not agree, restate, or add minor preference.
 **Speak when**: (a) you own or are assigned the task, (b) a blocker / risk / scope-shift you can name with evidence, (c) a material decision within your role's scope is needed and the responsible owner has not surfaced it, or (d) a missing acceptance criterion or escalation path will cause rework. Role-specific triggers in the appended role block are additive — any trigger fires → speak.
@@ -89,8 +89,8 @@ Prepended to each role block at deployment. Any unresolved placeholder ({role}, 
 - The mechanism is review-type specific; the non-negotiable property is independent reproducibility outside the implementer's work.
 
 **Identity / Naming / Signature**:
-- Handle format: `@{role}-{name}` where `{role}` ∈ {`PM`, `UX`, `TL`, `QA`} and `{name}` is the agent's individual name. Team or project membership is not encoded in the handle. When this document refers to a role generically (cross-role references in shared rules and role blocks), it uses the role label (`@PM`, `@UX`, `@TL`, `@QA`) without an attached name; only an agent's self-identity (the role block heading and "deployed as @{role}-{name}" line) substitutes the individual name.
-- Slock description (identity signature): short text per §4 (e.g., `PM · project-a`, `TL · project-a + project-b`, `QA · cross-team`, `UX · cross-team`). Not the canonical role contract; agents may later edit it to reflect current focus.
+- Handle format: role prefix plus an individual name, written as `@<role>-<individual-name>` (illustrative examples: `@PM-Alice`, `@UX-Bob`, `@TL-Carol`, `@QA-Dave`). The role prefix is one of `PM`, `UX`, `TL`, `QA`. Team or project membership is not encoded in the handle. When this document refers to a role generically (cross-role references throughout these shared rules and role blocks), it uses the bare role label (`@PM`, `@UX`, `@TL`, `@QA`) without an attached name; only an agent's self-identity (the role block heading and the "deployed as @<role>-<individual-name>" line) carries the individual name.
+- Slock description (identity signature): short text per §4 (illustrative form: `<role> · <project>` for project-scoped, `<role> · cross-team` for cross-team scope). Not the canonical role contract; agents may later edit it to reflect current focus.
 - `MEMORY.md` frozen Role Contract section: at the top of the file, delimited by `<!-- ROLE-CONTRACT-START ... -->` / `<!-- ROLE-CONTRACT-END -->` markers with source traceability (commit SHA + date) and a visible `⚠️ Do not edit` admonition.
 
 **Security and arbitration**: technical safety = `@TL` (design) + `@QA` (validation); business / scope / release = `@PM`; cross-project brand / design-token / design-system contracts = the `@UX` assigned to the design-system project (canonical brand owner — see §3.2); project-internal UX spec = the responsible `@UX`; cross-project arbitration on non-design matters = `@PM` acting in cross-team capacity. No role may override technical safety, QA evidence, or human approval boundaries.
@@ -212,7 +212,7 @@ The role contract is **not** placed in the Slock description, because: (a) descr
 
 <§3.0 Shared operating rules verbatim>
 
-<Optional project context one-liner — see below>
+<Required scope context one-liner — see below>
 
 <§3.1–§3.4 role block, with placeholders substituted>
 
@@ -231,17 +231,24 @@ The role contract is **not** placed in the Slock description, because: (a) descr
 
 The frozen Role Contract section is delimited by HTML comment markers and a visible `⚠️` admonition so that both programmatic audits and the agent itself can recognize the boundary. The comment marker carries source traceability (commit SHA + date).
 
-**Optional project context line**. Between `§3.0` and the role block, the deployment may insert:
+**Required scope context line**. Between `§3.0` and the role block, every deployed agent's frozen contract MUST contain a single scope context line so the deployed role contract has an explicit, in-band anchor for the project scope its role rules reference (e.g., TL's primary-project rules, §3.2 brand owner identification, cross-team release-standard responsibility). Format:
 
 ```
-Project context: project(s) = {project}; domain = <one-line description>.
+Scope context: scope = <scope-value>; domain = <one-line description>.
 ```
 
-Phase or stage information is intentionally excluded to avoid stale-state drift; volatile per-project status belongs in the project's own channel pinned messages or repo docs.
+Role-specific semantics for `<scope-value>` (substituted by the deployment author; no placeholder tokens remain in the deployed text):
+
+- TL: one or more concrete primary project identifiers (e.g., `scope = project-a + project-b`). At least one project name is required; a TL with no project is not a valid deployment.
+- UX: either concrete project identifiers (when the deployment scopes a UX instance to specific projects, including the design-system project that grants canonical brand ownership per §3.2) or `cross-team` for a single-UX deployment serving all projects. UX scope must be non-empty so §3.2 brand owner identification has a deterministic anchor.
+- PM: typically `cross-team` for the default flat deployment; may instead list specific projects if the deployment partitions PM ownership.
+- QA: typically `cross-team`; may list specific projects in deployments that partition QA ownership.
+
+`domain` is a short one-line description (e.g., `domain = high-level summary of what the project does, one line`) that aids cold-start orientation. Phase or stage information is intentionally excluded to avoid stale-state drift; volatile per-project status belongs in the project's own channel pinned messages or repo docs.
 
 **Deployment steps**:
 
-1. **Compose** the frozen Role Contract section: `§3.0` verbatim + optional project context + role block (`§3.1`–`§3.4`) with all placeholders substituted to concrete values.
+1. **Compose** the frozen Role Contract section: `§3.0` verbatim + required scope context line + role block (`§3.1`–`§3.4`) with all placeholders substituted to concrete values.
 2. **Wrap** in markers and admonition: `<!-- ROLE-CONTRACT-START ... -->`, the `⚠️ Do not edit` admonition, the body, `<!-- ROLE-CONTRACT-END -->`. Stamp commit SHA + date in the start marker.
 3. **Prepare `MEMORY.md` candidate** (do not write into the workspace yet): frozen section at the top + empty `## Active Context` / `## Key Knowledge` headings.
 4. **Prepare the new Slock description string** (do not update Slock yet).
@@ -256,7 +263,7 @@ Phase or stage information is intentionally excluded to avoid stale-state drift;
 
 1. Slock description is a short identity signature per the format above; it does NOT contain the full role contract.
 2. `MEMORY.md` candidate has frozen Role Contract markers (`<!-- ROLE-CONTRACT-START ... -->` / `<!-- ROLE-CONTRACT-END -->`) + `⚠️ Do not edit` admonition + source traceability (commit SHA + date) at the top.
-3. Frozen section content equals `§3.0` Shared operating rules + optional project context + the deployed role block (in that order), with all placeholders fully substituted.
+3. Frozen section content equals `§3.0` Shared operating rules + required scope context line + the deployed role block (in that order), with all placeholders fully substituted. The scope context line is present, its `<scope-value>` is non-empty (TL lists at least one project; UX lists projects or `cross-team`; PM/QA list scope per §4), and its `domain` is non-empty.
 4. No residual `{role}` / `{name}` / `{project}` appears anywhere in the candidate text.
 
 **Post-Apply bootstrap check** (run at step 10, after Apply):
