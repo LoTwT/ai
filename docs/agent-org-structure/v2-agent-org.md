@@ -42,7 +42,7 @@ The organization has 6 roles, split into two tiers:
 | Leadership (org-level) | `@Chief`, `@ChiefDesigner` | One instance each, not project-bound. |
 | Project tier | `@PM-{A}`, `@UX-{A}`, `@TL-{A}`, `@QA-{A}` | One instance per project per role. |
 
-Each agent's **frozen Role Contract section** in `MEMORY.md` is `§3.0 Shared operating rules` + the agent's role block (`§3.1`–`§3.6`), with `{A}` substituted per the deployment SOP. The agent's **Slock description** is a short identity signature pointing at the role (see [§5.1 Deployment payload structure](#51-deployment-payload-structure)).
+Each agent's **frozen Role Contract section** in `MEMORY.md` is `§3.0 Shared operating rules` + the optional project context line (project-tier roles only, see [§5.4](#54-optional-project-context-layer)) + the agent's role block (`§3.1`–`§3.6`), in that order, with `{A}` substituted per the deployment SOP. The agent's **Slock description** is a short identity signature pointing at the role (see [§5.1 Deployment payload structure](#51-deployment-payload-structure)).
 
 ### 3.0 Shared operating rules (deployment-injected before each role block)
 
@@ -302,21 +302,21 @@ For an agent that already has an established `MEMORY.md` and accumulated working
 
 This keeps working knowledge transferable across role-tier boundaries without forcing future re-discovery from chat history.
 
-**Backup before migration**. Before any migration patch is applied to an existing agent's `MEMORY.md`, the deploying author MUST commit the current `MEMORY.md` (and the `notes/` directory if present) to a git remote or local backup. This is a fail-safe in case partition rules are over-applied.
+**Backup before migration**. Before any migration patch is applied to an existing agent's `MEMORY.md`, the deploying author MUST capture the current `MEMORY.md` (and the `notes/` directory if present) by either committing to a git remote or copying to a stable backup location outside the agent's workspace. This is a fail-safe in case partition rules are over-applied.
 
 **Migration steps**:
 
-1. **Backup** the existing `MEMORY.md` and `notes/` to a stable location (git remote, or a local backup directory outside the agent's workspace).
+1. **Backup** the existing `MEMORY.md` and `notes/` to a stable location: either commit them to a git remote, or copy them to a local backup directory outside the agent's workspace.
 2. **Compose** the new frozen Role Contract section per §5.2 step 1–2 (with up-to-date commit SHA + date in the marker).
-3. **Patch `MEMORY.md`**:
+3. **Prepare patched `MEMORY.md` candidate** (do not write it into the agent's workspace yet):
    - Replace the existing frozen Role Contract block (or insert it at the top if none existed) with the newly composed block.
    - Leave Active Context, Key Knowledge, and other agent-editable sections unchanged unless a specific item is now obviously misleading. For specific stale items, edit in place with a "superseded by …" pointer; do not bulk-delete.
-   - If the role narrows from cross-project to project-scoped, move out-of-scope project-internal content to `notes/archive/<role>-<project>-internal.md` (per the role-tier transition rule above).
-4. **Update the Slock description** to the new identity signature.
+   - If the role narrows from cross-project to project-scoped, plan to move out-of-scope project-internal content to `notes/archive/<role>-<project>-internal.md` (per the role-tier transition rule above). The move is also staged at this step; it is not applied yet.
+4. **Prepare the new Slock description string** (do not update Slock yet).
 5. **Produce an auditable artifact**: a diff between the old and new `MEMORY.md` plus the new description string, captured before applying to Slock or the workspace.
-6. **Validate**: confirm the diff + final files satisfy §5.6 acceptance criteria, and confirm no living-memory entries were silently lost.
+6. **Validate**: confirm the diff + candidate files satisfy §5.6 acceptance criteria, and confirm no living-memory entries were silently lost.
 7. **Submit for review**: QA validates the migration diff.
-8. **Apply**: write the patched `MEMORY.md` into the agent's workspace, update the Slock description.
+8. **Apply** (first real write): write the patched `MEMORY.md` into the agent's workspace, perform the staged `notes/archive/…` move (if any), and update the Slock description to the new identity signature.
 
 ### 5.4 Optional project context layer
 
@@ -356,7 +356,7 @@ A deployed agent passes deployment review if **all** of the following hold:
 3. **The frozen Role Contract section equals** `§3.0` + optional project context line (project-tier roles only) + the deployed role block (`§3.1`–`§3.6`), in that order. For project-tier roles, `{A}` is fully substituted and project-tier handles are concrete. For org-level roles, the section contains no `{A}` and no project context line.
 4. **Mutable sections are preserved** (for migration only): `Active Context`, `Key Knowledge`, and notes that existed before the migration are still present and have not been bulk-deleted; stale items are either edited in place with a "superseded by …" pointer or moved to `notes/superseded.md` / `notes/archive/…`.
 5. **Generator (or manual SOP) output is auditable**: at least an artifact bundle, dry-run report, or migration diff is reviewable before any content is written into Slock or the agent's workspace.
-6. **Backup exists** (for migration only): the prior `MEMORY.md` and `notes/` have been committed to a stable location before the migration patch was applied.
+6. **Backup exists** (for migration only): the prior `MEMORY.md` and `notes/` have been committed to a git remote, or copied to a stable backup location outside the agent's workspace, before the migration patch was applied.
 
 QA validates against these criteria for every deployment cycle, regardless of manual vs. automated path.
 
