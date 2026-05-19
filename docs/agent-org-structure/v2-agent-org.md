@@ -1,6 +1,6 @@
 # Agent Organization v2
 
-> **Status**: Canonical structure. Active draft — not all roles are deployed yet.
+> **Status**: Superseded by [`v3-agent-org.md`](v3-agent-org.md) on 2026-05-19. Preserved as historical v2 snapshot of the 6-role taxonomy with Leadership tier (`@Chief`, `@ChiefDesigner`). The current canonical organization structure (4-role flat: `@PM`, `@UX`, `@TL`, `@QA` — PM absorbs Chief, UX absorbs ChiefDesigner) lives in v3.
 > **Predecessor**: [`v1-agent-team.md`](v1-agent-team.md) (4-role original).
 
 ## 1. Overview & purpose

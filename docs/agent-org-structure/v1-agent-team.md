@@ -1,8 +1,8 @@
 # Agent Team (v1, superseded)
 
-> **Status**: Superseded by `v2-agent-org.md` on 2026-05-18.
+> **Status**: Superseded. v1 → v2 (2026-05-18) → v3 (2026-05-19).
 >
-> This version is preserved as the v1 historical snapshot of the 4-role canonical team. The current canonical organization structure (6 roles + shared operating rules + deployment SOP) lives in v2.
+> The current canonical organization structure lives in [`v3-agent-org.md`](v3-agent-org.md) (4 roles flat — PM, UX, TL, QA; PM absorbed v2's Chief, UX absorbed v2's ChiefDesigner). For the v2 historical snapshot (6 roles with Leadership tier) see [`v2-agent-org.md`](v2-agent-org.md). This v1 file is preserved as the original 4-role roster historical snapshot.
 
 ---
 
