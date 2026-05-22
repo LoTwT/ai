@@ -196,14 +196,20 @@ The role contract is **not** placed in the Slock description, because: (a) descr
 
 **Slock description format**:
 
+Use the agent's **full role name** as its Slock description (e.g., `Product Manager`, `UI/UX Designer`, `Technical Lead`, `Quality Engineer`). This is the human-scannable identity nameplate; the agent's scope (project / cross-team) lives in the `MEMORY.md` scope context line, not in the description.
+
+A deployment MAY instead adopt the compact `<role> · <scope>` **signature** form, which folds a scope hint into the description itself:
+
 - Project-scoped role: `<role> · <project>` (e.g., `PM · project-a`) or `<role> · <project-a> + <project-b>` for a TL with multi-project primary scope (e.g., `TL · project-a + project-b`).
 - Cross-team role: `<role> · cross-team` (e.g., `UX · cross-team`, `QA · cross-team`).
+
+Whichever form a deployment adopts, it MUST be applied consistently to every agent (see **Deployment preferences**).
 
 **Deployment preferences** (decide once per deployment; apply uniformly):
 
 A deployment makes a few presentation choices that are not fixed by this spec. Each such choice MUST be made once and applied consistently to every agent, so that a deployment stays internally uniform as it grows.
 
-- **Slock description style**. Both forms are valid: the `<role> · <scope>` signature shown above, or the spelled-out full role name. A deployment MUST pick one style and use it for all agents; mixing styles within one deployment is a consistency error. Record the chosen style as a deployment preference.
+- **Slock description style**. The default is the **full role name**; a deployment MAY instead adopt the `<role> · <scope>` signature form. Either way, a deployment MUST pick one style and use it for all agents; mixing styles within one deployment is a consistency error. Record the chosen style as a deployment preference.
 - **Adding an agent to a running deployment** (e.g., a new instance or a failover/backup peer). The new agent MUST mirror the conventions already in use by the role it joins or backs up: the same Slock description style, and the same channel-membership set as its peer. Enumerate the peer's actual channels and match that set exactly — do not assume a list, and do not add the agent to channels the peer is not in. New presentation choices are not introduced for added agents; they inherit the deployment's established preferences.
 
 **`MEMORY.md` skeleton**:
