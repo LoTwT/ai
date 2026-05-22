@@ -50,7 +50,7 @@ The organization has 4 roles, flat:
 | `@TL-{name}` | Project-bounded (primary ownership over one or more projects); may pair across boundary on large work | One per primary-project group. |
 | `@QA-{name}` | Cross-team (independent verifier across all projects) | One per deployment by default. |
 
-Each agent's **frozen Role Contract section** in `MEMORY.md` is `§3.0 Shared operating rules` + the required scope context line (see §4) + the agent's role block (`§3.1`–`§3.4`), in that order, with placeholders substituted per §4. The agent's **Slock description** is a short identity signature pointing at the role and scope (see §4).
+Each agent's **frozen Role Contract section** in `MEMORY.md` is `§3.0 Shared operating rules` + the required scope context line (see §4) + the agent's role block (`§3.1`–`§3.4`), in that order, with placeholders substituted per §4. The agent's **Slock description** is a short identity nameplate — by default the full role name; scope lives in the `MEMORY.md` scope context line, not the description (see §4).
 
 ### 3.0 Shared operating rules (deployment-injected before each role block)
 
@@ -184,7 +184,7 @@ This section defines how a new agent's runtime payload is materialized from this
 
 **Deployment payload model**. An agent's runtime identity has two parts:
 
-1. **Slock description** — a short identity signature ("personality nameplate") shown to other humans and agents who browse channel members. Describes role and scope (project, cross-team, or primary-project list) briefly. Editable later by the agent.
+1. **Slock description** — a short identity nameplate shown to other humans and agents who browse channel members. By default it is the agent's full role name; scope (project, cross-team, or primary-project list) lives in the `MEMORY.md` scope context line, not the description — unless the deployment adopts the compact `<role> · <scope>` signature form (see §4). Editable later by the agent.
 2. **`MEMORY.md`** in the agent's workspace — the canonical runtime contract. The Slock daemon requires the agent to read `MEMORY.md` on startup, so any rules placed in it are reliably loaded on every session. `MEMORY.md` contains a **frozen Role Contract section** at the top (deployed from this document) plus **agent-editable sections** below (`Active Context`, `Key Knowledge`, project notes).
 
 The role contract is **not** placed in the Slock description, because: (a) description has a character limit that the full role contract exceeds, (b) description is meant to be human-scannable identity, not a normative contract, and (c) the daemon does not guarantee reading any file other than `MEMORY.md`, so a pointer like "see `ROLE.md`" cannot guarantee that the role contract is actually loaded. All-in-`MEMORY.md` is the only architecture that guarantees the role contract is in the agent's context on every startup.
@@ -192,12 +192,25 @@ The role contract is **not** placed in the Slock description, because: (a) descr
 **Hard invariants**:
 
 - Unresolved placeholders (`{role}`, `{name}`, `{project}`) may exist only in this source template; they must never appear in a deployed agent's frozen Role Contract section.
-- The Slock description must not contain the full role contract; it is limited to identity / scope signature.
+- The Slock description must not contain the full role contract; it is limited to a short identity signature (by default the role name).
 
 **Slock description format**:
 
+Use the agent's **full role name** as its Slock description (e.g., `Product Manager`, `UI/UX Designer`, `Technical Lead`, `Quality Engineer`). This is the human-scannable identity nameplate; the agent's scope (project / cross-team) lives in the `MEMORY.md` scope context line, not in the description.
+
+A deployment MAY instead adopt the compact `<role> · <scope>` **signature** form, which folds a scope hint into the description itself:
+
 - Project-scoped role: `<role> · <project>` (e.g., `PM · project-a`) or `<role> · <project-a> + <project-b>` for a TL with multi-project primary scope (e.g., `TL · project-a + project-b`).
 - Cross-team role: `<role> · cross-team` (e.g., `UX · cross-team`, `QA · cross-team`).
+
+Whichever form a deployment adopts, it MUST be applied consistently to every agent (see **Deployment preferences**).
+
+**Deployment preferences** (decide once per deployment; apply uniformly):
+
+A deployment makes a few presentation choices that are not fixed by this spec. Each such choice MUST be made once and applied consistently to every agent, so that a deployment stays internally uniform as it grows.
+
+- **Slock description style**. The default is the **full role name**; a deployment MAY instead adopt the `<role> · <scope>` signature form. Either way, a deployment MUST pick one style and use it for all agents; mixing styles within one deployment is a consistency error. Record the chosen style as a deployment preference.
+- **Adding an agent to a running deployment** (e.g., a new instance or a failover/backup peer). The new agent MUST mirror the conventions already in use by the role it joins or backs up: the same Slock description style, and the same channel-membership set as its peer. Enumerate the peer's actual channels and match that set exactly — do not assume a list, and do not add the agent to channels the peer is not in. New presentation choices are not introduced for added agents; they inherit the deployment's established preferences.
 
 **`MEMORY.md` skeleton**:
 
@@ -257,8 +270,8 @@ The scope context line above is a **format example**, not a verbatim insertion: 
 5. **Produce auditable artifact**: capture both candidate description and candidate `MEMORY.md` content (e.g., as a single bundle file or a directory) before any real write.
 6. **Validate** the bundle against the **Pre-Apply bundle gate** below.
 7. **Submit for review**: `@QA` validates the bundle.
-8. **Apply** (first real write): paste the description into Slock; place `MEMORY.md` in the agent's workspace `cwd`. Channel invites: project-scoped agents join their project channels; cross-team agents join all relevant project channels plus any cross-project coordination channel that exists in the deployment.
-9. **Bootstrap ack**: prompt the agent (typically by DM) to load `MEMORY.md`; the agent confirms it has read the file and acknowledges its role, name, project (if any), and signature.
+8. **Apply** (first real write): paste the description into Slock; place the candidate `MEMORY.md` in the agent's workspace `cwd`. Creating an agent through a UI does NOT by itself place `MEMORY.md` — an agent can come up with a default/empty `MEMORY.md` if the candidate was never written to its `cwd`; placement is a distinct, required action, verified at step 10. Channel invites: project-scoped agents join their project channels; cross-team agents join all relevant project channels plus any cross-project coordination channel that exists in the deployment; an agent added to a running deployment mirrors its peer's channel set (see **Deployment preferences**).
+9. **Bootstrap ack**: prompt the agent (typically by DM) to load `MEMORY.md`; the agent confirms it has read the file, that the frozen Role Contract section is present in it (the `ROLE-CONTRACT-START`/`END` markers, the `⚠️ Do not edit` admonition, and the source traceability), and acknowledges its role, name, project (if any), scope, and signature as deployed.
 10. **Run the Post-Apply bootstrap check** below to confirm the ack is real and complete; if it fails, treat the deployment as not yet complete.
 
 **Pre-Apply bundle gate** (run at step 6; QA validates at step 7; nothing has been written to Slock or the workspace yet):
@@ -270,6 +283,8 @@ The scope context line above is a **format example**, not a verbatim insertion: 
 
 **Post-Apply bootstrap check** (run at step 10, after Apply):
 
-1. Bootstrap ack confirms the agent has read `MEMORY.md` and acknowledges its role / name / project (if any) / signature. If the ack is missing, partial, or contradicts the deployed payload, the deployment is not complete; investigate before treating the agent as live.
+1. Bootstrap ack confirms the agent has read `MEMORY.md` and acknowledges its role / name / project (if any) / scope / signature.
+2. **MEMORY.md placement verification**. The ack MUST confirm that the agent's actual `MEMORY.md` contains the deployed frozen Role Contract section — the `ROLE-CONTRACT-START`/`END` markers, the `⚠️ Do not edit` admonition, and the source traceability (commit SHA + date) are all present — and that the role / name / scope / signature it reports match the deployed payload. The agent merely knowing its role is NOT sufficient evidence: an agent can come up with a default or placeholder `MEMORY.md` and still describe a plausible role, even though the frozen contract was never written to its `cwd` (step 8 incomplete). Verifying the markers and source traceability are present is what distinguishes a real placement from a default file.
+3. If the frozen Role Contract is missing, partial, or contradicts the deployed payload, the deployment is **not complete**: re-place the validated `MEMORY.md` candidate into the agent's `cwd`, then re-run this check. A reliable re-placement method is to have the agent retrieve the validated bundle artifact (the same file that passed the Pre-Apply gate) into its own `cwd`, rather than re-authoring it, so the placed file is byte-identical to what was validated.
 
 Manual deployment must produce an auditable artifact at step 5 — UI copy/paste without a captured bundle bypasses both gates.
