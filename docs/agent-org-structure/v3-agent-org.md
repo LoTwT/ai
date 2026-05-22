@@ -50,7 +50,7 @@ The organization has 4 roles, flat:
 | `@TL-{name}` | Project-bounded (primary ownership over one or more projects); may pair across boundary on large work | One per primary-project group. |
 | `@QA-{name}` | Cross-team (independent verifier across all projects) | One per deployment by default. |
 
-Each agent's **frozen Role Contract section** in `MEMORY.md` is `§3.0 Shared operating rules` + the required scope context line (see §4) + the agent's role block (`§3.1`–`§3.4`), in that order, with placeholders substituted per §4. The agent's **Slock description** is a short identity signature pointing at the role and scope (see §4).
+Each agent's **frozen Role Contract section** in `MEMORY.md` is `§3.0 Shared operating rules` + the required scope context line (see §4) + the agent's role block (`§3.1`–`§3.4`), in that order, with placeholders substituted per §4. The agent's **Slock description** is a short identity nameplate — by default the full role name; scope lives in the `MEMORY.md` scope context line, not the description (see §4).
 
 ### 3.0 Shared operating rules (deployment-injected before each role block)
 
@@ -184,7 +184,7 @@ This section defines how a new agent's runtime payload is materialized from this
 
 **Deployment payload model**. An agent's runtime identity has two parts:
 
-1. **Slock description** — a short identity signature ("personality nameplate") shown to other humans and agents who browse channel members. Describes role and scope (project, cross-team, or primary-project list) briefly. Editable later by the agent.
+1. **Slock description** — a short identity nameplate shown to other humans and agents who browse channel members. By default it is the agent's full role name; scope (project, cross-team, or primary-project list) lives in the `MEMORY.md` scope context line, not the description — unless the deployment adopts the compact `<role> · <scope>` signature form (see §4). Editable later by the agent.
 2. **`MEMORY.md`** in the agent's workspace — the canonical runtime contract. The Slock daemon requires the agent to read `MEMORY.md` on startup, so any rules placed in it are reliably loaded on every session. `MEMORY.md` contains a **frozen Role Contract section** at the top (deployed from this document) plus **agent-editable sections** below (`Active Context`, `Key Knowledge`, project notes).
 
 The role contract is **not** placed in the Slock description, because: (a) description has a character limit that the full role contract exceeds, (b) description is meant to be human-scannable identity, not a normative contract, and (c) the daemon does not guarantee reading any file other than `MEMORY.md`, so a pointer like "see `ROLE.md`" cannot guarantee that the role contract is actually loaded. All-in-`MEMORY.md` is the only architecture that guarantees the role contract is in the agent's context on every startup.
@@ -192,7 +192,7 @@ The role contract is **not** placed in the Slock description, because: (a) descr
 **Hard invariants**:
 
 - Unresolved placeholders (`{role}`, `{name}`, `{project}`) may exist only in this source template; they must never appear in a deployed agent's frozen Role Contract section.
-- The Slock description must not contain the full role contract; it is limited to identity / scope signature.
+- The Slock description must not contain the full role contract; it is limited to a short identity signature (by default the role name).
 
 **Slock description format**:
 
