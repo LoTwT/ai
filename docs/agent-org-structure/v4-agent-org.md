@@ -56,9 +56,11 @@ No cross-role compression: PM does not absorb UX, etc. Roles are not merged for 
 |---|---|
 | **handle** | `@{name}` — bare name. The ONLY routing/@mention token. Role NOT encoded. |
 | **display name** | `{name} · {role}[, {scope}]` — scope optional + agent-editable. For human scanning. Handle ≠ display; scope never enters the handle. |
-| **description** (Slock profile nameplate) | `{role}` (+ optional short scope). Presentation only — never a permission source. |
-| **avatar** | A stable per-agent **visual identity cache** — the visual counterpart of the name (a caller restores "who you are" via text=name or visual=avatar). Disambiguates same-names across deployments (visual namespace). First-class identity field, not decoration. Goes stale like a name → subject to the freshness triggers (§13). |
+| **description** (Slock profile nameplate) | `{role}` (+ optional short scope) — a presentation-layer, human-readable role summary in a unified voice. Never the contract itself and never a permission source; the authoritative contract is the MEMORY role schema. (This nails the out-of-spec case "contract only in description", §14: the description is the storefront, the schema is the law.) |
+| **avatar** | A stable per-agent **visual identity cache** — the visual counterpart of the name. **Derived deterministically from the name**: the avatar seed is a deterministic function of the name (e.g. `pixel:random:<seed>` with `seed = name`, optional role tint), so an instance regenerates the same image every time and different instances are visually distinct. This makes "avatar = visual namespace" verifiable (re-running the seed reproduces the same image). Disambiguates same-names; first-class field, not decoration; goes stale like a name → freshness triggers (§13). |
 | **role schema + boundary profile** | In `MEMORY.md`, frozen block. The authoritative source of the role contract + boundaries. |
+
+**Presentation is one atomic identity unit**: handle + display + description + avatar are seeded together in a single step (no half-set). They are not independent fields to fill piecemeal.
 
 **Role index (non-routing)**: because role is dropped from the handle, the deployment maintains a non-routing index `Role → current named owner(s)` (in #all roster / server profile / generated doc) so "find someone by role" discoverability is preserved without re-encoding role into the handle.
 
@@ -150,7 +152,7 @@ Unresolved placeholders (`{role}`/`{name}`/`{project}`) in a deployed frozen con
 - **Boundary gate**: every boundary item has `owner + enforcement-level + verification-method`; no contract-only item claimed as enforced security.
 - **MEMORY gate**: `MEMORY.md` actually exists on disk in cwd with frozen markers + source traceability (commit/date) + visible "⚠️ Do not edit". Description/display/avatar are presentation; MEMORY is authority. Mismatch → defined precedence or deployment-invalid.
 - **Schema-version gate**: `roleSchemaVersion + source/date` present.
-- **Bootstrap / post-apply ack**: on first turn the agent restates handle/display/description, role-schema source, Boundary Profile summary, **and `can own / cannot own`**; QA/PM grep markers + confirm no `{role}`/`{name}` residue + MEMORY on disk.
+- **Bootstrap / post-apply ack**: on first turn the agent restates handle/display/description, role-schema source, Boundary Profile summary, **and `can own / cannot own`**; QA/PM grep markers + confirm no `{role}`/`{name}` residue + MEMORY on disk. **Identity self-consistency check**: display contains name+role, avatar is non-placeholder and matches its name-derived seed, description is consistent with the role schema.
 
 ---
 
