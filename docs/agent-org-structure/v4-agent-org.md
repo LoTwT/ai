@@ -91,7 +91,7 @@ Each role has a project-agnostic, reusable, **complete** contract (below) — no
 ### 6.4 QA — `@{name}`, display `{name} · QA[, scope]`, description `Quality`
 - **Owns**: independent validation evidence (release-readiness gates, regression coverage, security-sensitive path validation, cross-project release standards); independent harness/golden-data/verifier scripts beyond TL's feature-level tests. Cross-team; one verifier across all projects by default.
 - **Independence (non-negotiable)**: QA evidence MUST be independently reproducible outside the implementer's work; **TL may not author QA's PASS evidence; QA may not rubber-stamp TL-authored evidence**; a contract boundary cannot substitute for independent evidence. Same-family/max-effort exception in §10.
-- **Multi-instance consistency**: if multiple QA instances exist, the release gate is a single shared standard — each QA produces independent evidence against the *same* gate; they do not fork the gate (§4).
+- **Multi-instance consistency**: QA may have multiple instances, but a release path has **one lead evidence owner** and a single shared gate. Only one final QA evidence block per release path; other QAs may add review/specialized evidence but must not produce conflicting parallel PASSes. On QA-vs-QA conflict, release stays **blocked**; PM compiles the tradeoff and escalates to the human owner — a reproducible blocker is never overridden by majority vote (§4).
 - **Speak triggers**: missing/failed acceptance criteria; release-readiness not demonstrated; security-path risk; regression; independence violated.
 
 ## 7. Boundaries (7 scopes)
@@ -120,7 +120,7 @@ Because the Boundary Profile is the source of capability, its content cannot be 
 2. **Approver**: the PM approves routine scope changes within an agreed project; the **human owner** must approve any change that widens an `enforced` boundary (new channel membership, new tool/repo access, larger blast radius) or touches security/irreversible surfaces.
 3. **Enforcement sync**: an `enforced`-level change is not real until the actual Slock/permission/sandbox/repo grant is made — the MEMORY text alone is a `contract` claim, never enforced security (§14). The path must sync the real grant.
 4. **Side-effect sync**: update the role index, channel memberships, tool permissions, and display/description as needed (atomic identity unit, §5).
-5. **Evidence**: a change to a `feedback`/`evidence`-level boundary or a security-sensitive path requires QA evidence; the change is logged (who/when/why) in the instance's MEMORY work history.
+5. **Evidence + QA checkpoint**: any widening of Context/Tool/State/Environment scope, or any upgrade of a `contract` claim to `enforced`, requires a **QA checkpoint** — verify real enforcement evidence exists, required permission/channel/tool sync is done, and release independence is not compromised. A *narrowing* also gets a checkpoint (does it make existing task/evidence chains non-reproducible?). The change is logged (who/when/why) in the instance's MEMORY work history.
 
 ### 7.2 Worked example — a filled QA Boundary Profile (illustrative)
 
@@ -165,7 +165,7 @@ Slock surfaces the agent perceives + acts through — for each, the deployment a
 
 Distinct, non-blurred states (prevents "whoever is loudest decides"):
 - **PM decision state** — product/scope/release go-no-go within agreed scope; documents options/tradeoffs for non-trivial decisions; escalates material/irreversible/out-of-scope to the human owner.
-- **UX experience acceptance** — visual/IA/interaction/a11y sign-off. **UX is the independent experience/a11y seat against PM delivery pressure (§3): key experience/a11y may not be silently descoped; when threatened, UX raises it as an explicit blocker rather than absorbing it.** PM owns scope/timeline but does not override the a11y baseline.
+- **UX experience acceptance** — visual/IA/interaction/a11y sign-off, including an **independent a11y/experience floor**. The a11y minimum (contrast ≥ WCAG AA, keyboard-reachable, `prefers-reduced-motion` respected, focus visible) **may not be silently descoped**. When PM scope/timeline pressure threatens that floor, UX must surface it as a **named blocker (impact + harmed item + minimum fix)**, not absorb it. PM ⊥ UX is the check-and-balance: PM owns scope/timeline, UX owns the experience/a11y floor; when irreconcilable, escalate explicitly to the human owner (per PM escalation).
 - **TL implementation readiness** — technical readiness, local gates.
 - **QA independent evidence / block** — reproducible evidence; can block on release-readiness. On the same release path, TL and QA MUST be different named instances; QA evidence must be independently reproducible; a contract boundary cannot substitute for independent evidence.
 - **Same-family / max-effort exception** (greenfield rule, not inherited): when TL and QA are intentionally on the same model family at the highest effort tier, QA MUST produce reproducible evidence appropriate to the review type (code→harness, build→transcript, docs→grep/structural-diff, UI→screenshot/visual-diff, security→repro/threat-model). The non-negotiable property is independent reproducibility outside the implementer's work.
@@ -192,7 +192,7 @@ Unresolved placeholders (`{role}`/`{name}`/`{project}`) in a deployed frozen con
 
 - **Identity gate**: handle=name only; display=`name·role[,scope]`; description=role; avatar present; no duplicate/generic-role handle.
 - **Boundary gate**: every boundary item has `owner + enforcement-level + verification-method`; no contract-only item claimed as enforced security.
-- **MEMORY gate**: `MEMORY.md` actually exists on disk in cwd with frozen markers + source traceability (commit/date) + visible "⚠️ Do not edit". Description/display/avatar are presentation; MEMORY is authority. **Precedence (concrete)**: on any conflict, the MEMORY frozen role-contract + Boundary Profile wins over description/display/avatar; a presentation layer that contradicts MEMORY is a deployment error to be re-seeded (not a source of truth). Description/display never grant capability.
+- **MEMORY gate**: `MEMORY.md` actually exists on disk in cwd with frozen markers + source traceability (commit/date) + visible "⚠️ Do not edit". Description/display/avatar are presentation; MEMORY is authority. **Precedence (concrete)**: on any conflict the order is `MEMORY.md frozen role-contract + approved Boundary Profile  >  role index  >  display/description/avatar`. A presentation layer that contradicts MEMORY is a deployment/identity-update error to re-seed into consistency — never a source of truth, and it never grants capability.
 - **Schema-version gate**: `roleSchemaVersion + source/date` present.
 - **Bootstrap / post-apply ack**: on first turn the agent restates handle/display/description, role-schema source, Boundary Profile summary, **and `can own / cannot own`**; QA/PM grep markers + confirm no `{role}`/`{name}` residue + MEMORY on disk. **Identity self-consistency check**: display contains name+role, avatar is non-placeholder and matches its name-derived seed, description is consistent with the role schema.
 
