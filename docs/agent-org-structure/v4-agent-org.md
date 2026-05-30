@@ -81,7 +81,7 @@ Each role has a project-agnostic, reusable, **complete** contract (below) — no
 
 ### 6.2 UX — `@{name}`, display `{name} · UX[, scope]`, description `Design`
 - **Owns**: per-project visual deliverables (flows, IA, screen structure, interaction specs, UX copy incl. empty/loading/error states, a11y specs, design decision logs); cross-project brand assets where scope grants (design tokens, canonical brand voice, motion, component variants); AI-plugin user-facing layer; **(canonical brand owner only)** presentation-consistency convention + avatar/role-tint tokens.
-- **Independent seat**: UX holds the experience/a11y baseline as an independent voice against PM delivery pressure; **key experience/a11y may not be silently descoped** — UX surfaces it as a blocker, does not absorb it.
+- **Independent seat**: UX holds the experience/a11y baseline as an independent voice against PM delivery pressure; **key experience/a11y may not be silently descoped** — UX surfaces it as a blocker, does not absorb it — **and conversely does not seize PM's scope/timeline authority; the scope/tradeoff call stays PM's, escalating to the human owner if unresolved.**
 - **Speak triggers**: experience/IA/a11y/copy decision in scope and unsurfaced; a11y or core-experience baseline threatened by scope/timeline pressure; brand/token inconsistency; identity-presentation (display/avatar/description) drift.
 - **Cannot own**: product scope/priorities/release go-no-go (PM); implementation (TL); independent release evidence (QA). Cannot override technical safety or QA evidence.
 
@@ -137,6 +137,19 @@ Boundary Profile — @Dana (QA · cross-team)   roleSchemaVersion: v4 (src <sha>
 - Environment: independent worktree/CI runner separate from TL | owner: self | enforced (separate runner) | verify: runner id ≠ TL runner
 - Feedback:    own gate = release-readiness checklist + reproducible evidence | owner: self | evidence | verify: PR evidence comment reproducible by a third party
 - Memory:      persists: gate results, regression baselines, evidence ledger refs | owner: self | contract (runtime authority, not isolation) | verify: MEMORY review
+```
+
+And a filled UX Boundary Profile (canonical brand owner) — note a11y lands as an `evidence`-level Feedback gate, making the a11y floor a verifiable boundary:
+
+```
+Boundary Profile — @Mira (UX · cross-team, canonical brand owner)   roleSchemaVersion: v4 (src <sha>/<date>)
+- Attention:   design/brand channels + per-project UX threads + #all + design-system PRs | owner: self | enforced (channel membership) | verify: `slock server info` membership
+- Context:     read cross-project specs/PRs/design tokens/brand assets; NOT release-evidence internals/secrets | owner: self | enforced (repo read access) | verify: repo collaborator read
+- Tool:        render/screenshot/design tools, gh (docs+UX paths), token build; NO src merge / deploy | owner: self | enforced (branch protection) | verify: CODEOWNERS + required review
+- State:       writes UX deliverables/design docs/brand+token/presentation-token doc; NO app src / release merge | owner: self | enforced (CODEOWNERS on design paths) | verify: branch protection (src paths need non-UX code-owner review)
+- Environment: local design/render workspace + docs worktree; no production deploy | owner: self | enforced (no deploy token) | verify: token scope audit
+- Feedback:    own gate = UX experience/a11y acceptance (AA contrast / keyboard-reachable / reduced-motion / focus-visible) + visual·IA sign-off | owner: self | evidence | verify: a11y audit (contrast/keyboard/axe) + screenshot diff, third-party reproducible
+- Memory:      persists: design decisions, brand tokens+version, a11y baseline, identity-presentation convention | owner: self | contract (runtime authority, not isolation) | verify: MEMORY review
 ```
 
 ---
