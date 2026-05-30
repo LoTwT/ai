@@ -64,7 +64,7 @@ No cross-role compression: PM does not absorb UX, etc. Roles are not merged for 
 
 **Presentation is one atomic identity unit**: handle + display + description + avatar are seeded together in a single step (no half-set). They are not independent fields to fill piecemeal.
 
-**Presentation-consistency convention** (description voice/format template + avatar style + role→tint mapping) is owned and versioned by the canonical brand owner (§4 — with the no-design-system-project fallback). "Unified voice" is a maintained brand token, not a slogan.
+**Presentation-consistency convention** (description voice/format template + avatar style + role→tint mapping) is owned and versioned by the canonical brand owner (§4 — with the no-design-system-project fallback). "Unified voice" is a maintained brand token, not a slogan. **Multi-UX deployments**: non-owner UX instances propose token/brand changes to the brand owner (a PR/proposal to the brand-owned token doc/repo); the brand owner accepts/versions them — non-owner UX does not fork the convention.
 
 **Role index (non-routing)**: because role is dropped from the handle, the deployment maintains a non-routing index `Role → current named owner(s)` (in #all roster / server profile / generated doc) so "find someone by role" discoverability is preserved without re-encoding role into the handle.
 
@@ -125,7 +125,7 @@ Because the Boundary Profile is the source of capability, its content cannot be 
 1. **Initiator**: the instance itself, its PM, or the human owner proposes the change (what scope, why).
 2. **Approver**: the PM approves routine scope changes within an agreed project; the **human owner** must approve any change that widens an `enforced` boundary (new channel membership, new tool/repo access, larger blast radius) or touches security/irreversible surfaces.
 3. **Enforcement sync**: an `enforced`-level change is not real until the actual Slock/permission/sandbox/repo grant is made — the MEMORY text alone is a `contract` claim, never enforced security (§14). The path must sync the real grant.
-4. **Side-effect sync**: update the role index, channel memberships, tool permissions, and display/description as needed (atomic identity unit, §5).
+4. **Side-effect sync**: update the role index, channel memberships, and tool permissions as needed. **Any display/description/avatar change is NOT done here** — it must go via the identity-update path (§13.1). Scope-update governs capability; identity-update governs presentation; the two paths are separate.
 5. **Evidence + QA checkpoint**: any widening of Context/Tool/State/Environment scope, or any upgrade of a `contract` claim to `enforced`, requires a **QA checkpoint** — verify real enforcement evidence exists, required permission/channel/tool sync is done, and release independence is not compromised. A *narrowing* also gets a checkpoint (does it make existing task/evidence chains non-reproducible?). The change is logged (who/when/why) in the instance's MEMORY work history.
 
 ### 7.2 Worked example — a filled QA Boundary Profile (illustrative)
@@ -202,14 +202,16 @@ Required deploy-time fields (all mandatory):
 - **display name** = `name · role[, scope]`.
 - **description** = role nameplate.
 - **avatar** = stable visual identity (required field).
-- **MEMORY.md** = frozen role-contract block (role schema + `roleSchemaVersion + source/date`) + Boundary Profile (7 scopes, each `owner + enforcement-level + verification-method`) + scope context line.
+- **MEMORY.md** = frozen role-contract block (role schema + `roleSchemaVersion + source/date`) + Boundary Profile (7 scopes, each `owner + enforcement-level + verification-method`). Scope is carried entirely by the Boundary Profile's Attention/Context scopes — there is no separate "scope context line" (single home for scope, no duplication).
 - **Role index** entry: `role → this named owner`.
 
 Unresolved placeholders (`{role}`/`{name}`/`{project}`) in a deployed frozen contract = deployment error; do not create the agent.
 
+**Keep the injected frozen contract lean**: only the chosen role's contract + this instance's Boundary Profile + the shared operating rules go into `MEMORY.md` (read every startup). Do not inject the other three role contracts or the full spec — context cost grows with payload size.
+
 ## 12. Deployment Gates
 
-- **Identity gate**: handle=name only; display=`name·role[,scope]`; description=role; avatar present; no duplicate/generic-role handle.
+- **Identity gate**: handle=name only; display=`name·role[,scope]`; description=role (the description's role token must be recognizable as the **same role** as the display's role token); avatar present; no duplicate/generic-role handle. **Role-index entry exists and matches `handle + role`** (+ scope where display carries it); canonical storage of the role index = the #all roster / server profile (single source, generated/maintained, not duplicated authoritatively elsewhere).
 - **Boundary gate**: every boundary item has `owner + enforcement-level + verification-method`; no contract-only item claimed as enforced security.
 - **MEMORY gate**: `MEMORY.md` actually exists on disk in cwd with frozen markers + source traceability (commit/date) + visible "⚠️ Do not edit". Description/display/avatar are presentation; MEMORY is authority. **Precedence (concrete)**: on any conflict the order is `MEMORY.md frozen role-contract + approved Boundary Profile  >  role index  >  display/description/avatar`. A presentation layer that contradicts MEMORY is a deployment/identity-update error to re-seed into consistency — never a source of truth, and it never grants capability.
 - **Schema-version gate**: `roleSchemaVersion + source/date` present.
@@ -230,7 +232,7 @@ A name/avatar is a cache; it goes stale. Freshness has two halves:
 
 The presentation layer is not agent-self-editable; changes follow an explicit path:
 1. **Initiator**: the instance may *propose/request*; PM or human owner *triggers* the change. An agent never unilaterally edits its own display/description/avatar.
-2. **Approver**: PM approves routine display/description scope-wording updates; the **canonical brand owner (UX)** reviews any change touching presentation-consistency (description voice, avatar style/tint); the human owner approves a **name** change (which is also an avatar re-render and a handle/@mention change — see migration concerns inherent to renaming).
+2. **Approver**: PM approves routine display/description scope-wording updates; the **canonical brand owner (UX)** reviews any change touching presentation-consistency (description voice, avatar style/tint); the human owner approves a **name** change (which is also an avatar re-render and a handle/@mention change — note the rename impact on existing references; this is not v3-style migration, just the cost of changing an instance's name).
 3. **Atomic update**: handle/display/description/avatar move as one unit (§5) — no half-set; the role index is synced in the same step.
 4. **Log**: the change is recorded (who/when/why) in the instance's MEMORY work history.
 This is the path referenced by §5 (display/description/avatar) and is distinct from the §7.1 boundary scope-update path (capability) — presentation vs capability are governed separately.
@@ -252,7 +254,20 @@ Explicitly excluded (any of these = invalid deployment / violation):
 
 ## 15. Glossary
 
-Name · Role · Role Schema · Named Instance · Boundary Profile · Attention/Context/Tool/State/Environment/Feedback/Memory Scope · Enforcement Level (enforced/contract/evidence) · Inbox · Held Draft · Decision Ledger · Evidence Ledger · Role Index · Avatar (visual identity cache) · Cache Freshness · Deployment Gate · Out-of-Spec Case.
+- **Name** — an instance's unique addressing/routing token (the handle); stable, carries history.
+- **Role** — a reusable schema/type (PM/UX/TL/QA); a lower-bound floor, not encoded in the handle.
+- **Role Schema** — the versioned, frozen role contract (owns / can-cannot own / speak triggers).
+- **Named Instance** — one agent = exactly one name = exactly one role.
+- **Boundary Profile** — the 7-scope capability declaration in MEMORY (each `owner + enforcement-level + verification-method`).
+- **7 Scopes** — Attention / Context / Tool / State / Environment / Feedback / Memory.
+- **Enforcement Level** — `enforced` (real isolation by Slock/permissions/sandbox) / `contract` (behavior only) / `evidence` (proven by review). Only `enforced` is a security boundary.
+- **Inbox** — pull-not-push perception surface.
+- **Held Draft** — freshness-checked send; outcomes revise/send-as-is/silent/override.
+- **Decision Ledger / Evidence Ledger** — PM decision record / QA reproducible-evidence record (§8 mechanism).
+- **Role Index** — non-routing `role → named owner` map for discoverability (canonical: #all roster / server profile).
+- **Avatar** — visual identity cache, bound to the name; name-derivation is the recommended default.
+- **Cache Freshness** — deploy-seed (front) + scope-refresh (back) so a name doesn't harden into a stale role.
+- **Deployment Gate / Out-of-Spec Case** — the deploy-time checks (§12) / the explicit invalid configurations (§14).
 
 ---
 
