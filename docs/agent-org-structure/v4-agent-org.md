@@ -62,6 +62,8 @@ No cross-role compression: PM does not absorb UX, etc. Roles are not merged for 
 
 **Presentation is one atomic identity unit**: handle + display + description + avatar are seeded together in a single step (no half-set). They are not independent fields to fill piecemeal.
 
+**Presentation-consistency convention** (description voice/format template + avatar style + role→tint mapping) is owned and versioned by the canonical brand owner (the UX on the design-system project, §4). "Unified voice" is a maintained brand token, not a slogan.
+
 **Role index (non-routing)**: because role is dropped from the handle, the deployment maintains a non-routing index `Role → current named owner(s)` (in #all roster / server profile / generated doc) so "find someone by role" discoverability is preserved without re-encoding role into the handle.
 
 ## 6. Role Schemas
@@ -162,7 +164,8 @@ Unresolved placeholders (`{role}`/`{name}`/`{project}`) in a deployed frozen con
 
 A name/avatar is a cache; it goes stale. Freshness has two halves:
 - **Seed (front)**: deploy-time seeds identity right (§11).
-- **Refresh (back)**: on major scope change / repeatedly routed to a new work type / channel-set change / team "I don't know who to ask" feedback — PM/owner triggers a recalibration of `display + description + avatar + MEMORY active capability + role index`. This is what keeps a name from hardening back into a stale role.
+- **Refresh (back)**: on major scope change / repeatedly routed to a new work type / channel-set change / team "I don't know who to ask" feedback — PM/owner triggers a recalibration of `display + description + MEMORY active capability + role index`. This is what keeps a name from hardening back into a stale role.
+  - **Avatar is NOT refreshed on per-scope drift** — because it is deterministically derived from the stable name (§5), avatar stays constant across scope changes (visual continuity is the point). Avatar re-renders only when (a) the name changes (rare) or (b) the org-wide avatar style / seed convention version is upgraded.
 
 ## 14. Out-of-Spec Cases
 
