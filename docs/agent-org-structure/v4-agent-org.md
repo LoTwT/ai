@@ -78,6 +78,7 @@ Each role has a project-agnostic, reusable, **complete** contract (below) — no
 - **Check-and-balance**: PM carries delivery/timeline pressure but **may not override UX's a11y/experience baseline, TL's technical safety, or QA's evidence** (§3, §10).
 - **Speak triggers**: goals/scope unclear; requirements/acceptance criteria missing or untestable; priorities conflict; scope drift; ownership unclear; cross-project resource/sequencing conflict; human owner needs a single org-level contact.
 - **Cannot own**: implementation/code (TL); independent release evidence (QA); visual/brand/a11y deliverables (UX). Cannot override technical safety, QA evidence, or human-approval boundaries.
+- **Multi-instance consistency**: PM may have multiple instances (e.g. split by project), but exactly **one lead PM** owns cross-project arbitration, the role index (§12 canonical owner), and approval of §7.1 scope-update requests. Other PMs run their project's product lane but defer cross-project sequencing/resource conflicts to the lead PM; the lead PM is the single org-level contact for the human owner. (Parallels multi-UX brand owner §6.2 and multi-QA lead evidence owner §6.4.)
 
 ### 6.2 UX — `@{name}`, display `{name} · UX[, scope]`, description `Design`
 - **Owns**: per-project visual deliverables (flows, IA, screen structure, interaction specs, UX copy incl. empty/loading/error states, a11y specs, design decision logs); cross-project brand assets where scope grants (design tokens, canonical brand voice, motion, component variants); AI-plugin user-facing layer; **(canonical brand owner only)** presentation-consistency convention + avatar/role-tint tokens.
@@ -203,12 +204,14 @@ Required deploy-time fields (all mandatory):
 - **description** = role nameplate.
 - **avatar** = stable visual identity (required field).
 - **MEMORY.md** = frozen role-contract block (role schema + `roleSchemaVersion + source/date`) + Boundary Profile (7 scopes, each `owner + enforcement-level + verification-method`) + **scope context line** (defined below — the authoritative home of this instance's scope, referenced by §5 display/description).
-- **Scope context line** (machine-checkable deploy header, authoritative scope source): `Scope Context: role=<PM|UX|TL|QA>; scope=<cross-team|project:{id}>; primaryProjects=[...]; channels=[...]; roleIndexRef=<#all-roster|registry-ref>`. The Boundary Profile's Attention/Context scopes carry the per-scope enforcement detail; this one line is the deploy-time summary the gate validates display/description/role-index consistency against. It indexes scope, it does not duplicate enforcement.
+- **Scope context line** (machine-checkable deploy header, authoritative scope source): `Scope Context: role=<PM|UX|TL|QA>; scope=<cross-team|project:{id}|projects:[...]>; primaryProjects=[...]; channels=[...]; roleIndexRef=<#all-roster|registry-ref>`. `scope` is the **coarse** scope token (cross-team, single project, or a multi-project group for a TL bound to >1 primary project, §4); the exact project list always lives in `primaryProjects`. The Boundary Profile's Attention/Context scopes carry the per-scope enforcement detail; this one line is the deploy-time summary the gate validates display/description/role-index consistency against. It indexes scope, it does not duplicate enforcement.
 - **Role index** entry: `role → this named owner`.
 
 Unresolved placeholders (`{role}`/`{name}`/`{project}`) in a deployed frozen contract = deployment error; do not create the agent.
 
 **Keep the injected frozen contract lean**: only the chosen role's contract + this instance's Boundary Profile + the shared operating rules go into `MEMORY.md` (read every startup). Do not inject the other three role contracts or the full spec — context cost grows with payload size.
+
+**Minimum viable deployment**: this spec defines the **ceiling**, not a mandatory floor for every team. A small deployment (e.g. one human + a handful of agents, no design-system project) MAY run a lean subset without being out-of-spec — for example: the 4 roles as single instances (no multi-instance arbitration rules needed); the `Scope Context:` line kept as human-readable text without the machine-checkable gate; the §7.1 QA scope-checkpoint enforced only for **`enforced`-level** capability expansion (tool/state/environment), treating `contract`/`evidence`-level scope wording as self-served. The invariants that always hold even in the lean subset: one name = one role (no cross-role compression, §3); MEMORY = frozen authority over presentation (§12 precedence); capability-change path ≠ presentation-change path (§7.1 vs §13.1). Scale up to the full governance set as instance count / project count grows.
 
 ## 12. Deployment Gates
 
