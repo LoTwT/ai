@@ -224,7 +224,7 @@ Unresolved placeholders (`{role}`/`{name}`/`{project}`) in a deployed frozen con
 A name/avatar is a cache; it goes stale. Freshness has two halves:
 - **Seed (front)**: deploy-time seeds identity right (§11).
 - **Refresh (back)**: on major scope change / repeatedly routed to a new work type / channel-set change / team "I don't know who to ask" feedback — PM/owner triggers a recalibration of `display + description + MEMORY active capability + role index`. This is what keeps a name from hardening back into a stale role.
-  - **Avatar is NOT refreshed on per-scope drift** — because it is deterministically derived from the stable name (§5), avatar stays constant across scope changes (visual continuity is the point). Avatar re-renders only when (a) the name changes (rare) or (b) the org-wide avatar style / seed convention version is upgraded.
+  - **Avatar is NOT refreshed on per-scope drift** — because it is bound to the stable name (§5; name-derivation is the recommended default), avatar stays constant across scope changes (visual continuity is the point). Avatar re-renders only when (a) the name changes (rare) or (b) the org-wide avatar style / seed convention version is upgraded.
 
 ### 13.1 Identity-update path (display / description / avatar)
 
