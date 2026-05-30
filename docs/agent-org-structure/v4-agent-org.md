@@ -57,8 +57,8 @@ No cross-role compression: PM does not absorb UX, etc. Roles are not merged for 
 | **handle** | `@{name}` — bare name. The ONLY routing/@mention token. Role NOT encoded. |
 | **display name** | `{name} · {role}[, {scope}]` — scope optional + agent-editable. For human scanning. Handle ≠ display; scope never enters the handle. |
 | **description** (Slock profile nameplate) | `{role}` (+ optional short scope) — a presentation-layer, human-readable role summary in a unified voice. Never the contract itself and never a permission source; the authoritative contract is the MEMORY role schema. (This nails the out-of-spec case "contract only in description", §14: the description is the storefront, the schema is the law.) |
-| **avatar** | A stable per-agent **visual identity cache** — the visual counterpart of the name. **Derived deterministically from the name**: the avatar seed is a deterministic function of the name (e.g. `pixel:random:<seed>` with `seed = name`, optional role tint), so an instance regenerates the same image every time and different instances are visually distinct. This makes "avatar = visual namespace" verifiable (re-running the seed reproduces the same image). Disambiguates same-names; first-class field, not decoration; goes stale like a name → freshness triggers (§13). |
-| **role schema + boundary profile** | In `MEMORY.md`, frozen block. The authoritative source of the role contract + boundaries. |
+| **avatar** | A stable per-agent **visual identity cache** — the visual counterpart of the name. **Derived deterministically from the name**: the avatar seed is a deterministic function of the name (e.g. `pixel:random:<seed>` with `seed = name`, optional role tint), so an instance regenerates the same image every time and different instances are visually distinct. This makes "avatar = visual namespace" verifiable (re-running the seed reproduces the same image). Visually distinguishes named instances (names/handles are unique by spec; the avatar is the fast visual recognition layer); first-class field, not decoration; goes stale like a name → freshness triggers (§13). |
+| **role schema + boundary profile** | In `MEMORY.md`. The **role schema** and the **Boundary Profile's schema/format** are in the frozen block (authoritative contract). The Boundary Profile's **concrete content** is a deployment-generated, editable block updated only via the explicit scope-update/review path (§7, §13). |
 
 **Presentation is one atomic identity unit**: handle + display + description + avatar are seeded together in a single step (no half-set). They are not independent fields to fill piecemeal.
 
@@ -93,7 +93,7 @@ Every named instance declares a **Boundary Profile** in MEMORY — 7 scopes, eac
 - **`contract`** — constrained by role-contract/MEMORY only (silent-default, sweep scope). Behavior, not security. A contract-only boundary claimed as enforced security is out of spec (§14).
 - **`evidence`** — proven by QA/PM review (independent verification, release gate).
 
-Format/fields of the Boundary Profile are frozen (stable schema); the concrete content is a deployment-generated, editable block (scope changes don't require rewriting the whole contract).
+**Frozen vs editable (no conflict)**: the Boundary Profile's *schema/format* (the 7-scope structure + the `owner + enforcement-level + verification-method` fields) is frozen alongside the role schema. The Boundary Profile's *concrete content* (the actual scope values for this instance) lives in MEMORY as a deployment-generated, **editable** block, changed only via the explicit scope-update/review path (§13) — so scope changes don't require rewriting the frozen contract, and the deployment gate (§12) checks the content against the frozen schema.
 
 ---
 
