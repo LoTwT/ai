@@ -182,7 +182,7 @@ Producing a new agent's runtime payload. Identity is seeded at deploy time, beca
 - **handle** = name (unique; never a generic role label).
 - **display name** = name (identical to the handle).
 - **description** = the prescribed role anchor (§3.2).
-- **MEMORY.md** = the frozen role-contract block (role schema + `roleSchemaVersion + source/date`) + the Boundary Profile (7 scopes, each `owner + enforcement-level + verification-method`) + the **Scope Context line** (below).
+- **`MEMORY.md`** = the frozen role-contract block (role schema + `roleSchemaVersion + source/date`) + the Boundary Profile (7 scopes, each `owner + enforcement-level + verification-method`) + the **Scope Context line** (below).
 - **Scope Context line** (machine-checkable deploy header): `Scope Context: role=<PM|UX|TL|QA>; scope=cross-team; channels=[...]; roleIndexRef=<#all-roster|registry-ref>`. Every role is cross-team by constraint.
 - **Role index** entry: `role → this named owner`.
 
@@ -190,7 +190,7 @@ There is no avatar field. Unresolved placeholders (`{role}`/`{name}`/`{project}`
 
 ### 6.2 Per-role configuration
 
-| Role | handle / name | description | model | MEMORY.md (frozen) |
+| Role | handle / name | description | model | `MEMORY.md` (frozen) |
 |---|---|---|---|---|
 | **PM** | `@{name}` | Product & Coordination | **Opus** | PM role schema + Boundary Profile (cross-team) + Scope Context line |
 | **UX** | `@{name}` | Design & Experience | **Opus** | UX role schema + Boundary Profile (cross-team) + Scope Context line |
