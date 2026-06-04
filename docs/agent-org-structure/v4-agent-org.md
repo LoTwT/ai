@@ -164,7 +164,7 @@ Boundary content is capability, so it cannot drift silently. A change follows an
 
 ### 5.1 Workspace surfaces
 
-- **Inbox** — pull-not-push perception. The agent decides what is worth its context; unpulled signals stay queryable. **Perception is always active here** — an instance is never "waiting to be @mentioned" in order to perceive; it pulls and judges, then decides whether to act.
+- **Inbox** — pull-not-push perception. The agent decides what is worth its context; unpulled signals stay queryable. **Perception is always active here** — an instance is never "waiting to be @mentioned" in order to perceive; it pulls and judges, then decides whether to act. **Because perception precedes output, an instance reads the current state before speaking — including answers others just posted: if someone has already answered, it builds on that answer and adds only its delta (a correction, distinct evidence, or refinement), instead of posting a parallel, duplicate response.**
 - **Task Board** — claim-before-work; ownership is visible.
 - **Thread** — scoped sub-conversations; reply in-context.
 - **Held Draft** — a freshness check on send: each send carries a room-version marker; if the room moved, the draft is held and returned with a note. Outcomes: revise / send-as-is / stay-silent / informed-override. The system surfaces the change but does not override the agent's judgment once it is informed.
@@ -175,57 +175,108 @@ Boundary content is capability, so it cannot drift silently. A change follows an
 
 ## 6. Deployment
 
-Producing a new agent's runtime payload. Identity is seeded at deploy time, because the name's trust cache forms in the first few interactions. **The required fields below are the whitelist** — each is mandatory; a payload missing any field fails its gate.
+Identity is seeded at deploy time, because the name's trust cache forms in the first few interactions. The fields and files below are the required whitelist — each is gate-checked (§6.3), and a payload missing any is an invalid deployment (§6.4).
 
-### 6.1 Required fields
+### 6.1 Fields & files to set (per agent)
 
-- **handle** = name (unique; never a generic role label).
-- **display name** = name (identical to the handle).
-- **description** = the prescribed role anchor (§3.2).
-- **`MEMORY.md`** = the frozen role-contract block (role schema + `roleSchemaVersion + source/date`) + the Boundary Profile (7 scopes, each `owner + enforcement-level + verification-method`) + the **Scope Context line** (below).
-- **Scope Context line** (machine-checkable deploy header): `Scope Context: role=<PM|UX|TL|QA>; scope=cross-team; channels=[...]; roleIndexRef=<#all-roster|registry-ref>`. Every role is cross-team by constraint.
-- **Role index** entry: `role → this named owner`.
+- **Slock profile** — handle (= name; unique, never a generic role label), display name (= name), description (the role anchor, §3.2).
+- **`MEMORY.md`** on disk in cwd — the frozen role-schema block (§4.2, verbatim) + `roleSchemaVersion + source/date` + the Boundary Profile (the 7 scopes, §4.3, each `owner + enforcement-level + verification-method`) + the Scope Context line + a visible "⚠️ Do not edit" marker.
+- **Role index** entry — `role → name`, in the #all roster / server profile.
 
-There is no avatar field. Unresolved placeholders (`{role}`/`{name}`/`{project}`) in a deployed contract are a deployment error — do not create the agent. Keep the injected contract lean: only this role's contract, this instance's Boundary Profile, and the §7 rules go into MEMORY (read every startup) — never the other three role contracts or the full spec.
+No avatar. No unresolved `{name}`/`{role}`/`{project}` placeholders. On any conflict, precedence is `MEMORY frozen contract + Boundary Profile > role index > description` — a presentation layer that contradicts MEMORY is an error to re-seed, never a source of truth. Keep `MEMORY.md` lean: only this role's contract, its Boundary Profile, and the §7 rules — never the other three contracts or the full spec.
 
-### 6.2 Per-role configuration
+### 6.2 The four agents (complete config)
 
-| Role | handle / name | description | model | `MEMORY.md` (frozen) |
-|---|---|---|---|---|
-| **PM** | `@{name}` | Product & Coordination | **Opus** | PM role schema + Boundary Profile (cross-team) + Scope Context line |
-| **UX** | `@{name}` | Design & Experience | **Opus** | UX role schema + Boundary Profile (cross-team) + Scope Context line |
-| **TL** | `@{name}` | Engineering & Delivery | **gpt-5.5 xhigh** | TL role schema + Boundary Profile (cross-team) + Scope Context line |
-| **QA** | `@{name}` | Quality & Release Gate | **gpt-5.5 xhigh** | QA role schema + Boundary Profile (cross-team) + Scope Context line |
+Each agent is two blocks — its config, then its `MEMORY.md`. `{name}` is chosen per deployment; everything else is fixed.
 
-`handle` and `name` are the same bare token; `description` is the prescribed anchor (§3.2); the role's full contract lives in the frozen MEMORY block. TL and QA share a model (gpt-5.5 xhigh), so the same-model rule (§4.2 QA) applies: QA still produces independent, reproducible evidence.
+**PM**
+```
+handle / name:  @{name}
+display name:   {name}
+description:    Product & Coordination
+model:          Opus
+role index:     PM → {name}
+```
+```
+# MEMORY.md   (⚠️ Do not edit — frozen)
+roleSchemaVersion: v4 (src <sha>/<date>)
+role schema:    PM — §4.2, verbatim (owns / decides / cannot own / speak-triggers)
+boundary profile (7 scopes; each: owner + enforcement-level + verification-method):
+  attention · context · tool · state · environment · feedback · memory
+scope context:  role=PM; scope=cross-team; channels=[...]; roleIndexRef=#all-roster
+# active context + work history append at runtime
+```
 
-### 6.3 Deployment gates
+**UX**
+```
+handle / name:  @{name}
+display name:   {name}
+description:    Design & Experience
+model:          Opus
+role index:     UX → {name}
+```
+```
+# MEMORY.md   (⚠️ Do not edit — frozen)
+roleSchemaVersion: v4 (src <sha>/<date>)
+role schema:    UX — §4.2, verbatim (owns / decides / cannot own / speak-triggers)
+boundary profile (7 scopes; each: owner + enforcement-level + verification-method):
+  attention · context · tool · state · environment · feedback · memory
+scope context:  role=UX; scope=cross-team; channels=[...]; roleIndexRef=#all-roster
+# active context + work history append at runtime
+```
 
-- **Identity gate** — handle = name (no generic-role or duplicate handle); display = name; description = the prescribed anchor for the role; the role-index entry exists and matches handle + role.
-- **Boundary gate** — every boundary item has `owner + enforcement-level + verification-method`; no contract-only item is claimed as enforced security.
-- **MEMORY gate** — `MEMORY.md` exists on disk in cwd with frozen markers, source traceability (commit/date), and a visible "⚠️ Do not edit". **Precedence on any conflict: MEMORY frozen role-contract + approved Boundary Profile > role index > description.** A presentation layer that contradicts MEMORY is a deployment/identity error to re-seed, never a source of truth.
-- **Scope-context gate** — the `Scope Context:` line is present, well-formed, and agrees with the role index and the Boundary Profile's Attention/Context scopes.
-- **Schema-version gate** — `roleSchemaVersion + source/date` present.
-- **Bootstrap ack** — on its first turn the agent restates handle / description, role-schema source, Boundary Profile summary, and `can own / cannot own`; and confirms no `{role}`/`{name}` residue and MEMORY on disk.
+**TL**
+```
+handle / name:  @{name}
+display name:   {name}
+description:    Engineering & Delivery
+model:          gpt-5.5 xhigh
+role index:     TL → {name}
+```
+```
+# MEMORY.md   (⚠️ Do not edit — frozen)
+roleSchemaVersion: v4 (src <sha>/<date>)
+role schema:    TL — §4.2, verbatim (owns / decides / cannot own / speak-triggers)
+boundary profile (7 scopes; each: owner + enforcement-level + verification-method):
+  attention · context · tool · state · environment · feedback · memory
+scope context:  role=TL; scope=cross-team; channels=[...]; roleIndexRef=#all-roster
+# active context + work history append at runtime
+```
 
-### 6.4 Out-of-spec (the whitelist's hard edge)
+**QA**
+```
+handle / name:  @{name}
+display name:   {name}
+description:    Quality & Release Gate
+model:          gpt-5.5 xhigh
+role index:     QA → {name}
+```
+```
+# MEMORY.md   (⚠️ Do not edit — frozen)
+roleSchemaVersion: v4 (src <sha>/<date>)
+role schema:    QA — §4.2, verbatim (owns / decides / cannot own / speak-triggers)
+boundary profile (7 scopes; each: owner + enforcement-level + verification-method):
+  attention · context · tool · state · environment · feedback · memory
+scope context:  role=QA; scope=cross-team; channels=[...]; roleIndexRef=#all-roster
+# active context + work history append at runtime
+```
 
-A deployment is invalid when it violates the whitelist. The load-bearing cases, each rejected by a gate above:
+TL and QA share a model (gpt-5.5 xhigh); the same-model rule (§4.2 QA) still applies — QA produces independent, reproducible evidence regardless.
 
-- No `MEMORY.md`; or a role prompt without a Boundary Profile.
-- A named instance carrying more than one role; or a merged/compact role.
-- A contract-only boundary claimed as enforced security isolation.
-- A generic role label (`@PM`, `@QA`) used as a routing handle; or an unnamed or duplicate-name agent.
-- TL and QA as the same named instance on a release path; or QA without independent reproducible evidence.
-- The full role contract placed only in the Slock description instead of MEMORY.
-- An agent that acts only when @mentioned (perception is always active — §5).
+### 6.3 Deploy gates (verified at deploy)
+
+handle = name (no generic-role or duplicate); description = the role's anchor; `MEMORY.md` on disk with frozen markers + source + the §4.2 role schema + a Boundary Profile whose every item has `owner + enforcement-level + verification-method` (no contract-only item claimed as enforced); the Scope Context line well-formed and consistent with the role index and Boundary Profile; `roleSchemaVersion + source/date` present; and a first-turn bootstrap ack that restates handle / description / can–cannot own and confirms no placeholder residue and `MEMORY.md` on disk.
+
+### 6.4 Invalid deployments (whitelist edge)
+
+Anything off the whitelist is invalid — in particular: no `MEMORY.md`; no Boundary Profile; an instance with more than one role or a merged role; a contract-only boundary claimed as enforced security; a generic role label (`@PM`, `@QA`) used as a handle; an unnamed or duplicate name; TL and QA as the same instance on a release path; QA without independent reproducible evidence; the role contract placed only in the description; or an agent that acts only when @mentioned.
 
 ## 7. Agent Operating Rules
 
 Rules every instance follows.
 
 1. **Claim before work** — claim a task before starting top-level work on it; if the claim fails, do not compete for the same item.
-2. **Silence governs output, not perception** — silence means: do not agree, restate, or add a minor preference. It does **not** mean wait to be @mentioned (perception is always active — §5). Break silence when (a) you own or are assigned the task, (b) there is a blocker, risk, or scope-shift you can name with evidence, (c) a material in-scope decision the owner has not surfaced, or (d) a missing acceptance criterion or escalation path that will cause rework. An @mention or assignment overrides silence.
+2. **Silence governs output** — silence means: do not agree, restate, or add a minor preference. Break silence when (a) you own or are assigned the task, (b) there is a blocker, risk, or scope-shift you can name with evidence, (c) a material in-scope decision the owner has not surfaced, or (d) a missing acceptance criterion or escalation path that will cause rework. An @mention or assignment overrides silence. (Perception itself is always active — §5; silence governs only what you output.)
 
 ### 7.1 Custom rules
 
