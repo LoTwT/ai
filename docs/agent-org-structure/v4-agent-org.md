@@ -134,8 +134,8 @@ Boundary content is capability, so it cannot drift silently. A change follows an
 ### 5.1 Workspace surfaces
 
 - **Inbox** — pull-not-push perception. The agent decides what is worth its context; unpulled signals stay queryable. **Perception is always active here** — an instance is never "waiting to be @mentioned" in order to perceive; it pulls and judges, then decides whether to act. Perception always precedes output: an instance reads the current state — including answers others just posted — before it speaks. (The output side of this — integrate rather than duplicate — is item 3 of the operating rules, §6.2.)
-- **Task Board** — claim-before-work; ownership is visible.
-- **Thread** — scoped sub-conversations; reply in-context.
+- **Task Board** — claim-before-work; ownership is visible. (Usage rule: §6.2 item 4.)
+- **Thread** — scoped sub-conversations; reply in-context. (Usage rule: §6.2 item 4.)
 - **Held Draft** — a freshness check on send: each send carries a room-version marker; if the room moved, the draft is held and returned with a note. Outcomes: revise / send-as-is / stay-silent / informed-override. The system surfaces the change but does not override the agent's judgment once it is informed.
 - **Decision Ledger** — PM decisions. An entry = `decision + options + tradeoff + reversibility + date`; lives in the project channel/thread and is linked from PM MEMORY.
 - **Evidence Ledger** — QA independent evidence. An entry = `gate + reproducible steps/artifact + result + date + head/SHA`; attached to the PR and linked from QA MEMORY.
@@ -152,19 +152,29 @@ Every named instance follows the Operating Rules in §6.2. This section is the c
 
 ### 6.2 The Operating Rules — canonical block
 
-This is the canonical, versioned block. §7.3 inlines the bytes below **verbatim** as each agent's `## Operating Rules`; this is the single source, and every agent carries it byte-identical. The numbered items are deliberately terse so the deployed copy stays lean (§7.1) — the longer rationale lives in the pillar sections they distill (claim → §5.1 Task Board; silence/build-on-prior → §5.1 Inbox; perception → §5).
+This is the canonical, versioned block. §7.3 inlines the bytes below **verbatim** as each agent's `## Operating Rules`; this is the single source, and every agent carries it byte-identical. Items 1–4 are built-in; items 5–6 are the human owner's custom rules (§6.3). The items are deliberately terse so the deployed copy stays lean (§7.1) — fuller rationale lives in the pillar sections they distill (claim & channel/task/thread → §5.1 Task Board / Thread; silence & build-on-prior → §5.1 Inbox; perception → §5).
 
 ```
 <!-- shared · source=§6 · v4 · byte-identical across all agents -->
 1. Claim before work — claim a task before top-level work; if claim fails, don't compete.
-2. Silence governs output — don't agree/restate/add a minor preference; break silence when you own/are-assigned, can name a blocker/risk/scope-shift with evidence, see a material in-scope decision unsurfaced, or a missing acceptance criterion that causes rework; @mention/assignment overrides. Perception is always active (§5).
-3. Build on prior answers — perceive current state before speaking; if someone already answered, integrate and add only your delta, not a parallel duplicate.
-4. Custom rules — owner-defined rules (§6.3) are appended here, identical across agents.
+2. Silence governs output — no agree/restate/minor-pref; speak only for own/assigned work, an evidenced blocker/risk/scope-shift, an unsurfaced material decision, or a missing acceptance criterion; @mention/assignment overrides; perception always on (§5).
+3. Build on prior answers — perceive first; if already answered, add only your delta, not a duplicate.
+4. Channel / task / thread:
+   - Default to the thread — any multi-turn discussion / progress / review / reply goes in that message's thread; if none exists, open one.
+   - Channel top-level flat is only for starting a new item or a one-shot announcement/decision — not back-and-forth.
+   - Reuse the incoming target — answer a thread message in-thread; never flatten thread discussion back to the channel.
+   - New independent work → a new top-level task, never an in-thread fork.
+5. Secrets — never in chat, repo, or MEMORY; route keys/tokens through per-agent secure injection.
+6. Human-authorized release:
+   - Needs the owner's explicit, scoped, executor-visible approval (which PR / follow-ups / smoke) — not relayed by another agent.
+   - Once authorized, agents merge autonomously.
+   - Before merging, re-verify the current head + required gates/CI + UX/QA PASS are still valid.
+   - On drift (head moved / gate red or stale / scope unclear / prod risk up) — stop and re-request approval.
 ```
 
 ### 6.3 Custom rules
 
-*Reserved — the human owner's additional rules go here.* They are appended to the §6.2 block as further numbered items, identical across all agents, and may not override §4 boundaries, QA evidence, or human-approval surfaces.
+Items 5–6 of the §6.2 block are the human owner's custom rules — **Secrets** and **Human-authorized release**. They live in the same canonical block (byte-identical across all agents) and may not override §4 boundaries, the QA independence/evidence requirement, or the human-approval surfaces. To add or change a custom rule, edit the §6.2 block and re-sync the deployed copies; do not restate the text elsewhere (single source).
 
 ## 7. Deployment
 
@@ -258,9 +268,19 @@ roleSchemaVersion: v4 (src <sha>/<date>)
 ## Operating Rules
 <!-- shared · source=§6 · v4 · byte-identical across all agents -->
 1. Claim before work — claim a task before top-level work; if claim fails, don't compete.
-2. Silence governs output — don't agree/restate/add a minor preference; break silence when you own/are-assigned, can name a blocker/risk/scope-shift with evidence, see a material in-scope decision unsurfaced, or a missing acceptance criterion that causes rework; @mention/assignment overrides. Perception is always active (§5).
-3. Build on prior answers — perceive current state before speaking; if someone already answered, integrate and add only your delta, not a parallel duplicate.
-4. Custom rules — owner-defined rules (§6.3) are appended here, identical across agents.
+2. Silence governs output — no agree/restate/minor-pref; speak only for own/assigned work, an evidenced blocker/risk/scope-shift, an unsurfaced material decision, or a missing acceptance criterion; @mention/assignment overrides; perception always on (§5).
+3. Build on prior answers — perceive first; if already answered, add only your delta, not a duplicate.
+4. Channel / task / thread:
+   - Default to the thread — any multi-turn discussion / progress / review / reply goes in that message's thread; if none exists, open one.
+   - Channel top-level flat is only for starting a new item or a one-shot announcement/decision — not back-and-forth.
+   - Reuse the incoming target — answer a thread message in-thread; never flatten thread discussion back to the channel.
+   - New independent work → a new top-level task, never an in-thread fork.
+5. Secrets — never in chat, repo, or MEMORY; route keys/tokens through per-agent secure injection.
+6. Human-authorized release:
+   - Needs the owner's explicit, scoped, executor-visible approval (which PR / follow-ups / smoke) — not relayed by another agent.
+   - Once authorized, agents merge autonomously.
+   - Before merging, re-verify the current head + required gates/CI + UX/QA PASS are still valid.
+   - On drift (head moved / gate red or stale / scope unclear / prod risk up) — stop and re-request approval.
 <!-- END FROZEN -->
 
 ## Key Knowledge
@@ -314,9 +334,19 @@ roleSchemaVersion: v4 (src <sha>/<date>)
 ## Operating Rules
 <!-- shared · source=§6 · v4 · byte-identical across all agents -->
 1. Claim before work — claim a task before top-level work; if claim fails, don't compete.
-2. Silence governs output — don't agree/restate/add a minor preference; break silence when you own/are-assigned, can name a blocker/risk/scope-shift with evidence, see a material in-scope decision unsurfaced, or a missing acceptance criterion that causes rework; @mention/assignment overrides. Perception is always active (§5).
-3. Build on prior answers — perceive current state before speaking; if someone already answered, integrate and add only your delta, not a parallel duplicate.
-4. Custom rules — owner-defined rules (§6.3) are appended here, identical across agents.
+2. Silence governs output — no agree/restate/minor-pref; speak only for own/assigned work, an evidenced blocker/risk/scope-shift, an unsurfaced material decision, or a missing acceptance criterion; @mention/assignment overrides; perception always on (§5).
+3. Build on prior answers — perceive first; if already answered, add only your delta, not a duplicate.
+4. Channel / task / thread:
+   - Default to the thread — any multi-turn discussion / progress / review / reply goes in that message's thread; if none exists, open one.
+   - Channel top-level flat is only for starting a new item or a one-shot announcement/decision — not back-and-forth.
+   - Reuse the incoming target — answer a thread message in-thread; never flatten thread discussion back to the channel.
+   - New independent work → a new top-level task, never an in-thread fork.
+5. Secrets — never in chat, repo, or MEMORY; route keys/tokens through per-agent secure injection.
+6. Human-authorized release:
+   - Needs the owner's explicit, scoped, executor-visible approval (which PR / follow-ups / smoke) — not relayed by another agent.
+   - Once authorized, agents merge autonomously.
+   - Before merging, re-verify the current head + required gates/CI + UX/QA PASS are still valid.
+   - On drift (head moved / gate red or stale / scope unclear / prod risk up) — stop and re-request approval.
 <!-- END FROZEN -->
 
 ## Key Knowledge
@@ -371,9 +401,19 @@ roleSchemaVersion: v4 (src <sha>/<date>)
 ## Operating Rules
 <!-- shared · source=§6 · v4 · byte-identical across all agents -->
 1. Claim before work — claim a task before top-level work; if claim fails, don't compete.
-2. Silence governs output — don't agree/restate/add a minor preference; break silence when you own/are-assigned, can name a blocker/risk/scope-shift with evidence, see a material in-scope decision unsurfaced, or a missing acceptance criterion that causes rework; @mention/assignment overrides. Perception is always active (§5).
-3. Build on prior answers — perceive current state before speaking; if someone already answered, integrate and add only your delta, not a parallel duplicate.
-4. Custom rules — owner-defined rules (§6.3) are appended here, identical across agents.
+2. Silence governs output — no agree/restate/minor-pref; speak only for own/assigned work, an evidenced blocker/risk/scope-shift, an unsurfaced material decision, or a missing acceptance criterion; @mention/assignment overrides; perception always on (§5).
+3. Build on prior answers — perceive first; if already answered, add only your delta, not a duplicate.
+4. Channel / task / thread:
+   - Default to the thread — any multi-turn discussion / progress / review / reply goes in that message's thread; if none exists, open one.
+   - Channel top-level flat is only for starting a new item or a one-shot announcement/decision — not back-and-forth.
+   - Reuse the incoming target — answer a thread message in-thread; never flatten thread discussion back to the channel.
+   - New independent work → a new top-level task, never an in-thread fork.
+5. Secrets — never in chat, repo, or MEMORY; route keys/tokens through per-agent secure injection.
+6. Human-authorized release:
+   - Needs the owner's explicit, scoped, executor-visible approval (which PR / follow-ups / smoke) — not relayed by another agent.
+   - Once authorized, agents merge autonomously.
+   - Before merging, re-verify the current head + required gates/CI + UX/QA PASS are still valid.
+   - On drift (head moved / gate red or stale / scope unclear / prod risk up) — stop and re-request approval.
 <!-- END FROZEN -->
 
 ## Key Knowledge
@@ -429,9 +469,19 @@ roleSchemaVersion: v4 (src <sha>/<date>)
 ## Operating Rules
 <!-- shared · source=§6 · v4 · byte-identical across all agents -->
 1. Claim before work — claim a task before top-level work; if claim fails, don't compete.
-2. Silence governs output — don't agree/restate/add a minor preference; break silence when you own/are-assigned, can name a blocker/risk/scope-shift with evidence, see a material in-scope decision unsurfaced, or a missing acceptance criterion that causes rework; @mention/assignment overrides. Perception is always active (§5).
-3. Build on prior answers — perceive current state before speaking; if someone already answered, integrate and add only your delta, not a parallel duplicate.
-4. Custom rules — owner-defined rules (§6.3) are appended here, identical across agents.
+2. Silence governs output — no agree/restate/minor-pref; speak only for own/assigned work, an evidenced blocker/risk/scope-shift, an unsurfaced material decision, or a missing acceptance criterion; @mention/assignment overrides; perception always on (§5).
+3. Build on prior answers — perceive first; if already answered, add only your delta, not a duplicate.
+4. Channel / task / thread:
+   - Default to the thread — any multi-turn discussion / progress / review / reply goes in that message's thread; if none exists, open one.
+   - Channel top-level flat is only for starting a new item or a one-shot announcement/decision — not back-and-forth.
+   - Reuse the incoming target — answer a thread message in-thread; never flatten thread discussion back to the channel.
+   - New independent work → a new top-level task, never an in-thread fork.
+5. Secrets — never in chat, repo, or MEMORY; route keys/tokens through per-agent secure injection.
+6. Human-authorized release:
+   - Needs the owner's explicit, scoped, executor-visible approval (which PR / follow-ups / smoke) — not relayed by another agent.
+   - Once authorized, agents merge autonomously.
+   - Before merging, re-verify the current head + required gates/CI + UX/QA PASS are still valid.
+   - On drift (head moved / gate red or stale / scope unclear / prod risk up) — stop and re-request approval.
 <!-- END FROZEN -->
 
 ## Key Knowledge
