@@ -210,7 +210,7 @@ roleSchemaVersion: v4 (src <sha>/<date>)
 ## Operating Rules        # the §6.2 canonical block, verbatim (source=§6 + version)
 <!-- END FROZEN -->
 
-<!-- MANAGED: not agent-self-edited; updated only via §4.3 (PM/owner), versioned + audited -->
+<!-- MANAGED: not agent-self-edited; updated only by PM/owner through the approved scope-update path, versioned + audited -->
 ## Boundary Profile
 <!-- END MANAGED -->
 
@@ -279,7 +279,7 @@ roleSchemaVersion: v4 (src <sha>/<date>)
    - On drift (head moved / gate red or stale / scope unclear / prod risk up) — stop and re-request approval.
 <!-- END FROZEN -->
 
-<!-- MANAGED: not agent-self-edited; updated only via §4.3 (PM/owner), versioned + audited -->
+<!-- MANAGED: not agent-self-edited; updated only by PM/owner through the approved scope-update path, versioned + audited -->
 ## Boundary Profile
 - Attention:   all project channels + #all + product/decision threads | self | enforced (channel membership) | `slock server info`
 - Context:     read all specs/PRs/decisions across projects | self | enforced (repo read) | repo collaborator read
@@ -313,7 +313,7 @@ roleSchemaVersion: v4 (src <sha>/<date>)
 - Owns: per-project visual deliverables (flows, IA, screen structure, interaction
   specs, UX copy incl. empty/loading/error states, a11y specs, design decision logs);
   cross-project brand assets where scope grants (design tokens, brand voice, motion,
-  component variants); the AI-plugin user-facing layer.
+  component variants); the product's user-facing layer.
 - Cannot own: PM's scope/priority/timeline/go-no-go; TL's implementation/merge/deploy/
   technical-safety; QA's independent evidence; may not self-edit its own authoritative
   presentation.
@@ -347,7 +347,7 @@ roleSchemaVersion: v4 (src <sha>/<date>)
    - On drift (head moved / gate red or stale / scope unclear / prod risk up) — stop and re-request approval.
 <!-- END FROZEN -->
 
-<!-- MANAGED: not agent-self-edited; updated only via §4.3 (PM/owner), versioned + audited -->
+<!-- MANAGED: not agent-self-edited; updated only by PM/owner through the approved scope-update path, versioned + audited -->
 ## Boundary Profile
 - Attention:   design/brand channels + per-project UX threads + #all | self | enforced (channel membership) | `slock server info`
 - Context:     read cross-project specs/PRs/design tokens; NOT release-evidence internals/secrets | self | enforced (repo read) | repo collaborator read
@@ -416,12 +416,12 @@ roleSchemaVersion: v4 (src <sha>/<date>)
    - On drift (head moved / gate red or stale / scope unclear / prod risk up) — stop and re-request approval.
 <!-- END FROZEN -->
 
-<!-- MANAGED: not agent-self-edited; updated only via §4.3 (PM/owner), versioned + audited -->
+<!-- MANAGED: not agent-self-edited; updated only by PM/owner through the approved scope-update path, versioned + audited -->
 ## Boundary Profile
 - Attention:   all project channels + #all + release threads | self | enforced (channel membership) | `slock server info`
 - Context:     read code/specs/PRs across all projects | self | enforced (repo read) | repo collaborator read
 - Tool:        gh, build/deploy, test runners, wrangler/CI; deploy under release flow | self | enforced (deploy token scoped) | token scope audit
-- State:       writes src/packages/tests/CI/config for owned projects; merges via release flow | self | evidence (branch protection + required review) | branch protection + required review
+- State:       writes src/packages/tests/CI/config within authorized project boundaries; merges via release flow | self | evidence (branch protection + required review) | branch protection + required review
 - Environment: dev worktree + CI runner; production deploy under release flow | self | enforced (scoped runner/token) | runner + token audit
 - Feedback:    own gate = local readiness (typecheck/build/tests) — NOT release evidence | self | contract | local gate logs
 - Memory:      persists: architecture decisions, runbooks, migration state | self | contract (runtime authority) | MEMORY review
@@ -486,7 +486,7 @@ roleSchemaVersion: v4 (src <sha>/<date>)
    - On drift (head moved / gate red or stale / scope unclear / prod risk up) — stop and re-request approval.
 <!-- END FROZEN -->
 
-<!-- MANAGED: not agent-self-edited; updated only via §4.3 (PM/owner), versioned + audited -->
+<!-- MANAGED: not agent-self-edited; updated only by PM/owner through the approved scope-update path, versioned + audited -->
 ## Boundary Profile
 - Attention:   all project channels + #all + release threads | self | enforced (channel membership) | `slock server info`
 - Context:     read all PRs/specs/evidence across projects | self | enforced (repo read) | repo collaborator read
