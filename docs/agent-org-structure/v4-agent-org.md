@@ -236,7 +236,7 @@ The `## Operating Rules` block is **byte-identical** across all four agents and 
 
 ### 7.3 The four agents (complete, copy-ready)
 
-Each agent has a **config** block for the Slock profile and a **`MEMORY.md`** block. Paste verbatim and fill only `{name}` — the shared source version is already stamped (`src c43426b/2026-06-07`, identical across the four agents). The deployed `MEMORY.md` must retain no placeholder.
+Each agent has a **config** block for the Slock profile and a **`MEMORY.md`** block. Paste verbatim and fill only `{name}` — the shared source version is already stamped (`src 82bf450/2026-06-07`, identical across the four agents). The deployed `MEMORY.md` must retain no placeholder.
 
 ---
 
@@ -251,7 +251,7 @@ model:          Opus
 ```md
 # {name}
 <!-- FROZEN: do not edit · source=v4 · role=pm -->
-roleSchemaVersion: v4 (src c43426b/2026-06-07)
+roleSchemaVersion: v4 (src 82bf450/2026-06-07)
 
 <!-- source: Boundaries / the four roles -->
 ## Role Contract
@@ -331,7 +331,7 @@ model:          Opus
 ```md
 # {name}
 <!-- FROZEN: do not edit · source=v4 · role=ux -->
-roleSchemaVersion: v4 (src c43426b/2026-06-07)
+roleSchemaVersion: v4 (src 82bf450/2026-06-07)
 
 <!-- source: Boundaries / the four roles -->
 ## Role Contract
@@ -409,7 +409,7 @@ model:          gpt xhigh
 ```md
 # {name}
 <!-- FROZEN: do not edit · source=v4 · role=tl -->
-roleSchemaVersion: v4 (src c43426b/2026-06-07)
+roleSchemaVersion: v4 (src 82bf450/2026-06-07)
 
 <!-- source: Boundaries / the four roles -->
 ## Role Contract
@@ -488,7 +488,7 @@ model:          gpt xhigh
 ```md
 # {name}
 <!-- FROZEN: do not edit · source=v4 · role=qa -->
-roleSchemaVersion: v4 (src c43426b/2026-06-07)
+roleSchemaVersion: v4 (src 82bf450/2026-06-07)
 
 <!-- source: Boundaries / the four roles -->
 ## Role Contract
