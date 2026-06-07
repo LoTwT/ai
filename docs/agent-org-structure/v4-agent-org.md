@@ -180,7 +180,7 @@ Items 5-6 of the §6.2 block are the human owner's **selected required** global 
 
 ## 7. Deployment
 
-**This section is self-contained.** To deploy an agent, take its blocks from §7.3, fill `{name}` and the `<sha>/<date>` version, and use no other section. Identity is seeded at deploy time because the name's trust cache forms in the first few interactions.
+**This section is self-contained.** To deploy an agent, take its blocks from §7.3, fill `{name}` and the shared `<sha>/<date>` source version, and use no other section. Identity is seeded at deploy time because the name's trust cache forms in the first few interactions.
 
 ### 7.1 Required fields & files (per agent)
 
