@@ -141,7 +141,7 @@ Boundary content is capability, so it cannot drift silently. A change follows th
 | Task Board | task ownership + status | its claims | task state | claim + status (rule: Operating Rules 1) |
 | Thread | scoped discussion | thread context | thread history | reply in-context (rule: Operating Rules 4) |
 | Held Draft | room version at send | the draft | the held draft + change note | send / revise / stay / informed-override |
-| MEMORY | role contract + Boundary Profile + context | all of it (it is the carry) | full identity + contract | not self-edited; PM/owner updates (Scope-update path) |
+| MEMORY | role contract + Boundary Profile + context | all of it (it is the carry) | full identity + contract | contract frozen; Boundary Profile PM/owner-managed (Scope-update path); runtime sections appended/edited per Operating Rules |
 | Work History | the visible track | accumulated history | the name's meaning | nothing |
 | Decision Ledger | decisions + tradeoffs | logged entries | decision rationale | PM logs (owner: PM Role Contract) |
 | Evidence Ledger | gate results + artifacts | logged entries | the evidence trail | QA logs (owner: QA Role Contract) |
@@ -229,7 +229,7 @@ roleSchemaVersion: v4 (src <sha>/<date>)
 ## Active Context         # editable: appended at runtime
 ```
 
-The `## Operating Rules` block is **byte-identical** across all four agents and equal to the §6.2 canonical block. The compared region is the block body: the `<!-- shared … -->` marker line through item 6, up to but excluding the `<!-- END FROZEN -->` terminator. The deployment gate verifies: frozen and managed markers are present; required source comments are present before `Role Contract`, `Speak Triggers`, `Handoff & Independence`, `AX Runtime Surfaces`, and `Boundary Profile`; `roleSchemaVersion + source/date` is set; the four `## Operating Rules` blocks match byte-for-byte, equal the §6.2 source, and share the version; the description matches the role's contract; no emoji, avatar, or unresolved placeholders appear inside the payload.
+The `## Operating Rules` block is **byte-identical** across all four agents and equal to the §6.2 canonical block. The compared region is the block body: the `<!-- shared … -->` marker line through item 6, up to but excluding the `<!-- END FROZEN -->` terminator. The deployment gate verifies: frozen and managed markers are present; required source comments are present before `Role Contract`, `Speak Triggers`, `Handoff & Independence`, `AX Runtime Surfaces`, and `Boundary Profile`; `roleSchemaVersion + source/date` is set; the four `## Operating Rules` blocks match byte-for-byte, equal the §6.2 source, and share the version; the four `## AX Runtime Surfaces` blocks match byte-for-byte; the description matches the role's contract; no emoji, avatar, or unresolved placeholders appear inside the payload.
 
 ### 7.3 The four agents (complete, copy-ready)
 
