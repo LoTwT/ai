@@ -140,11 +140,13 @@ Boundary content is capability, so it cannot drift silently. A change follows th
 | Inbox | pending signals, pull-not-push | nothing (queryable) | unpulled signals remain | what enters context; whether to act |
 | Task Board | task ownership + status | its claims | task state | claim + status (rule: Operating Rules 1) |
 | Thread | scoped discussion | thread context | thread history | reply in-context (rule: Operating Rules 4) |
-| Held Draft | room version at send | the draft | the held draft + change note | send / revise / stay / informed-override |
+| Held Draft | room version at send | the draft | the held draft + change note | revise / send-as-is / stay-silent / informed-override |
 | MEMORY | role contract + Boundary Profile + context | all of it (it is the carry) | full identity + contract | contract frozen; Boundary Profile PM/owner-managed (Scope-update path); runtime sections appended/edited per Operating Rules |
 | Work History | the visible track | accumulated history | the name's meaning | nothing |
 | Decision Ledger | decisions + tradeoffs | logged entries | decision rationale | PM logs (owner: PM Role Contract) |
 | Evidence Ledger | gate results + artifacts | logged entries | the evidence trail | QA logs (owner: QA Role Contract) |
+
+Work History forms from task claims, thread outcomes, Decision/Evidence Ledger links, and feedback; it keeps the name's external expectations fresh, since a name is the caller's compressed history and trust, not a role.
 
 ## 6. Shared Runtime Rules
 
@@ -214,8 +216,9 @@ roleSchemaVersion: v4 (src <sha>/<date>)
 ## Handoff & Independence
 <!-- source: Agent Experience (AX) -->
 ## AX Runtime Surfaces
-- Recovery: MEMORY is your recovery point each startup, rebuilt from the Role Contract + Boundary Profile + the runtime sections below; Work History keeps your name's track.
-- Perception and action surfaces (inbox, task board, threads, held draft) are runtime-provided and their rules live in Operating Rules; persistence of decisions and evidence follows your Role Contract.
+- Recovery: MEMORY is your recovery point each startup, rebuilt from the Role Contract + Boundary Profile + the runtime sections below; Work History keeps your name's track and its caller expectations fresh.
+- Perception and action surfaces (inbox, task board, threads) are runtime-provided and their rules live in Operating Rules; persistence of decisions and evidence follows your Role Contract.
+- Held draft: when the room moved since you drafted, choose revise, send-as-is, stay-silent, or informed-override.
 
 ## Operating Rules        # the canonical Operating Rules block, verbatim (source=Shared Runtime Rules + version)
 <!-- END FROZEN -->
@@ -277,8 +280,9 @@ roleSchemaVersion: v4 (src c43426b/2026-06-07)
 
 <!-- source: Agent Experience (AX) -->
 ## AX Runtime Surfaces
-- Recovery: MEMORY is your recovery point each startup, rebuilt from the Role Contract + Boundary Profile + the runtime sections below; Work History keeps your name's track.
-- Perception and action surfaces (inbox, task board, threads, held draft) are runtime-provided and their rules live in Operating Rules; persistence of decisions and evidence follows your Role Contract.
+- Recovery: MEMORY is your recovery point each startup, rebuilt from the Role Contract + Boundary Profile + the runtime sections below; Work History keeps your name's track and its caller expectations fresh.
+- Perception and action surfaces (inbox, task board, threads) are runtime-provided and their rules live in Operating Rules; persistence of decisions and evidence follows your Role Contract.
+- Held draft: when the room moved since you drafted, choose revise, send-as-is, stay-silent, or informed-override.
 
 ## Operating Rules
 <!-- shared · source=Shared Runtime Rules · v4 · byte-identical across all agents -->
@@ -354,8 +358,9 @@ roleSchemaVersion: v4 (src c43426b/2026-06-07)
 
 <!-- source: Agent Experience (AX) -->
 ## AX Runtime Surfaces
-- Recovery: MEMORY is your recovery point each startup, rebuilt from the Role Contract + Boundary Profile + the runtime sections below; Work History keeps your name's track.
-- Perception and action surfaces (inbox, task board, threads, held draft) are runtime-provided and their rules live in Operating Rules; persistence of decisions and evidence follows your Role Contract.
+- Recovery: MEMORY is your recovery point each startup, rebuilt from the Role Contract + Boundary Profile + the runtime sections below; Work History keeps your name's track and its caller expectations fresh.
+- Perception and action surfaces (inbox, task board, threads) are runtime-provided and their rules live in Operating Rules; persistence of decisions and evidence follows your Role Contract.
+- Held draft: when the room moved since you drafted, choose revise, send-as-is, stay-silent, or informed-override.
 
 ## Operating Rules
 <!-- shared · source=Shared Runtime Rules · v4 · byte-identical across all agents -->
@@ -432,8 +437,9 @@ roleSchemaVersion: v4 (src c43426b/2026-06-07)
 
 <!-- source: Agent Experience (AX) -->
 ## AX Runtime Surfaces
-- Recovery: MEMORY is your recovery point each startup, rebuilt from the Role Contract + Boundary Profile + the runtime sections below; Work History keeps your name's track.
-- Perception and action surfaces (inbox, task board, threads, held draft) are runtime-provided and their rules live in Operating Rules; persistence of decisions and evidence follows your Role Contract.
+- Recovery: MEMORY is your recovery point each startup, rebuilt from the Role Contract + Boundary Profile + the runtime sections below; Work History keeps your name's track and its caller expectations fresh.
+- Perception and action surfaces (inbox, task board, threads) are runtime-provided and their rules live in Operating Rules; persistence of decisions and evidence follows your Role Contract.
+- Held draft: when the room moved since you drafted, choose revise, send-as-is, stay-silent, or informed-override.
 
 ## Operating Rules
 <!-- shared · source=Shared Runtime Rules · v4 · byte-identical across all agents -->
@@ -512,8 +518,9 @@ roleSchemaVersion: v4 (src c43426b/2026-06-07)
 
 <!-- source: Agent Experience (AX) -->
 ## AX Runtime Surfaces
-- Recovery: MEMORY is your recovery point each startup, rebuilt from the Role Contract + Boundary Profile + the runtime sections below; Work History keeps your name's track.
-- Perception and action surfaces (inbox, task board, threads, held draft) are runtime-provided and their rules live in Operating Rules; persistence of decisions and evidence follows your Role Contract.
+- Recovery: MEMORY is your recovery point each startup, rebuilt from the Role Contract + Boundary Profile + the runtime sections below; Work History keeps your name's track and its caller expectations fresh.
+- Perception and action surfaces (inbox, task board, threads) are runtime-provided and their rules live in Operating Rules; persistence of decisions and evidence follows your Role Contract.
+- Held draft: when the room moved since you drafted, choose revise, send-as-is, stay-silent, or informed-override.
 
 ## Operating Rules
 <!-- shared · source=Shared Runtime Rules · v4 · byte-identical across all agents -->
