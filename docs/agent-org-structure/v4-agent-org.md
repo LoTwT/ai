@@ -180,14 +180,14 @@ Items 5-6 of the §6.2 block are the human owner's **selected required** global 
 
 ## 7. Deployment
 
-**This section is self-contained.** To deploy an agent, take its blocks from §7.3, fill `{name}` and the shared `<sha>/<date>` source version, and use no other section. Identity is seeded at deploy time because the name's trust cache forms in the first few interactions.
+**This section is self-contained.** To deploy an agent, take its blocks from §7.3 and fill `{name}` — the shared `<sha>/<date>` source version is already stamped to this release — and use no other section. Identity is seeded at deploy time because the name's trust cache forms in the first few interactions.
 
 ### 7.1 Required fields & files (per agent)
 
 A deployment sets exactly these. A payload missing or violating any item is invalid:
 
 - **Slock profile**: handle (= name; unique; never a generic role label like `@PM`), display name (= name), description (the role anchor, §3.2; must match the role).
-- **`MEMORY.md`** on disk in cwd: the agent's payload from §7.3. The frozen contract block and the managed Boundary Profile block follow the structure in §7.2, with `roleSchemaVersion + source/date`. The only deploy-time substitutions are `{name}` and the shared `<sha>/<date>` source version (the same value across all four agents, best filled by the deploy step); no placeholder may remain in the deployed `MEMORY.md`.
+- **`MEMORY.md`** on disk in cwd: the agent's payload from §7.3. The frozen contract block and the managed Boundary Profile block follow the structure in §7.2, with `roleSchemaVersion + source/date`. The only deploy-time substitution is `{name}`; the shared `<sha>/<date>` source version is already stamped to this release (the same value across all four agents, re-stamped whenever the spec changes). No placeholder may remain in the deployed `MEMORY.md`.
 
 No avatar. On conflict, precedence is `MEMORY (frozen contract + managed Boundary Profile) > description`. A presentation layer that contradicts MEMORY is an error to re-seed, not a source of truth. Keep `MEMORY.md` lean: only this agent's block, never another role's contract or the full spec.
 
@@ -222,7 +222,7 @@ The `## Operating Rules` block is **byte-identical** across all four agents and 
 
 ### 7.3 The four agents (complete, copy-ready)
 
-Each agent has a **config** block for the Slock profile and a **`MEMORY.md`** block. Paste verbatim. Fill only `{name}` and the shared `<sha>/<date>` source version (identical across the four agents); the deployed `MEMORY.md` must retain no placeholder.
+Each agent has a **config** block for the Slock profile and a **`MEMORY.md`** block. Paste verbatim and fill only `{name}` — the shared source version is already stamped (`src 8e2f821/2026-06-07`, identical across the four agents). The deployed `MEMORY.md` must retain no placeholder.
 
 ---
 
@@ -237,7 +237,7 @@ model:          Opus
 ```md
 # {name}
 <!-- FROZEN: do not edit · source=v4 · role=pm -->
-roleSchemaVersion: v4 (src <sha>/<date>)
+roleSchemaVersion: v4 (src 8e2f821/2026-06-07)
 
 ## Role Contract
 - Owns: product goals/priorities/scope + decision logs; requirements (rules, user
@@ -307,7 +307,7 @@ model:          Opus
 ```md
 # {name}
 <!-- FROZEN: do not edit · source=v4 · role=ux -->
-roleSchemaVersion: v4 (src <sha>/<date>)
+roleSchemaVersion: v4 (src 8e2f821/2026-06-07)
 
 ## Role Contract
 - Owns: per-project visual deliverables (flows, IA, screen structure, interaction
@@ -375,7 +375,7 @@ model:          gpt xhigh
 ```md
 # {name}
 <!-- FROZEN: do not edit · source=v4 · role=tl -->
-roleSchemaVersion: v4 (src <sha>/<date>)
+roleSchemaVersion: v4 (src 8e2f821/2026-06-07)
 
 ## Role Contract
 - Owns: system design (architecture, data model, API contracts, critical
@@ -444,7 +444,7 @@ model:          gpt xhigh
 ```md
 # {name}
 <!-- FROZEN: do not edit · source=v4 · role=qa -->
-roleSchemaVersion: v4 (src <sha>/<date>)
+roleSchemaVersion: v4 (src 8e2f821/2026-06-07)
 
 ## Role Contract
 - Owns: independent validation evidence (release-readiness gates, regression
