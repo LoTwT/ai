@@ -128,17 +128,22 @@ def normalize_items(items):
     out = []
     for raw in items:
         it = dict(raw)
-        if "grams" not in it and "typicalGrams" in it:
+        # 显示重量缺失时用 typicalGrams 兜底（注意：grams 的 0 兜底要放在 kcal 计算之后，
+        # 否则 kcalPer100g 路径会用 grams=0 算出静默的 0 kcal）
+        if it.get("grams") in (None, "") and it.get("typicalGrams") is not None:
             it["grams"] = it["typicalGrams"]
-        it.setdefault("grams", 0)
         if it.get("kcal") not in (None, ""):
             it["kcal"] = int(round(float(it["kcal"])))
         elif it.get("kcalPer100g") is not None:
-            it["kcal"] = int(round(float(it["grams"]) * float(it["kcalPer100g"]) / 100.0))
+            g = it.get("grams")
+            if g in (None, "") or float(g) <= 0:
+                die(f"条目「{it.get('name', '?')}」用 kcalPer100g 计算需要正的 grams（或 typicalGrams），否则会被静默记成 0。")
+            it["kcal"] = int(round(float(g) * float(it["kcalPer100g"]) / 100.0))
         elif it.get("kcalPerServing") is not None:
             it["kcal"] = int(round(float(it["kcalPerServing"]) * float(it.get("servings", 1))))
         else:
             die(f"条目「{it.get('name', '?')}」无法计算热量：需提供 kcal、grams+kcalPer100g、或 kcalPerServing 之一。")
+        it.setdefault("grams", 0)  # 仅作显示重量兜底（品牌整份/直接给 kcal 且无重量时），不参与已算好的 kcal
         out.append(it)
     return out
 
@@ -299,7 +304,10 @@ def cmd_edit(args):
         "before": {"items": entry["items"], "totalKcal": entry["totalKcal"], "mealType": entry["mealType"]},
     }
     if args.items:
-        entry["items"] = normalize_items(read_json_arg(args.items))
+        raw_items = read_json_arg(args.items)
+        if not isinstance(raw_items, list):
+            die("items 文件须是 JSON 数组（[{name, grams, kcalPer100g, ...}, ...]）")
+        entry["items"] = normalize_items(raw_items)
         entry["totalKcal"] = compute_total(entry["items"])
     if args.meal:
         if args.meal not in MEAL_TYPES:
