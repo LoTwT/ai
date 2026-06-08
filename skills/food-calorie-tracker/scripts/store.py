@@ -26,7 +26,7 @@ import re
 import secrets
 import shutil
 import sys
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 
 try:
@@ -94,6 +94,28 @@ def now_local(tz_name: str) -> datetime:
 def die(msg: str, code: int = 1):
     print(f"error: {msg}", file=sys.stderr)
     sys.exit(code)
+
+
+_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+def valid_date(d: str) -> str:
+    """日期同时用作路径段和 entryId 前缀，必须严格校验，否则会破坏持久化、
+    甚至成为路径穿越写入点（如 `../../escape`、`2026/05/30`）。"""
+    if not isinstance(d, str) or not _DATE_RE.match(d):
+        die(f"日期格式须为 YYYY-MM-DD（如 2026-05-30）：{d!r}")
+    try:
+        date.fromisoformat(d)
+    except ValueError:
+        die(f"不是合法日历日期：{d!r}")
+    return d
+
+
+def safe_entry_id(eid: str) -> str:
+    """entryId 会拼进文件路径，拒绝任何路径分隔符 / 上跳，防穿越。"""
+    if not isinstance(eid, str) or not eid or "/" in eid or "\\" in eid or ".." in eid:
+        die(f"非法 entryId：{eid!r}")
+    return eid
 
 
 def read_json_arg(path: str):
@@ -240,6 +262,7 @@ def _copy_images(root: Path, date: str, entry_id: str, images):
 def cmd_add(args):
     if args.meal not in MEAL_TYPES:
         die(f"meal 须为 {MEAL_TYPES} 之一")
+    valid_date(args.date)
     root = data_root()
     tz = timezone_name()
     now = now_local(tz)
@@ -280,6 +303,7 @@ def cmd_add(args):
 
 
 def _find_entry(root: Path, entry_id: str) -> Path:
+    safe_entry_id(entry_id)
     # entryId 内含日期前缀，直接定位当日目录
     m = re.match(r"(\d{4}-\d{2}-\d{2})T", entry_id)
     if m:
@@ -344,6 +368,7 @@ def _day_total(root: Path, date: str) -> int:
 
 
 def cmd_list(args):
+    valid_date(args.date)
     root = data_root()
     entries = _load_day_entries(root, args.date)
     rows = [{
@@ -369,6 +394,7 @@ def cmd_aggregate(args):
 
     只读、不估算。缺数据时 fail-loud。
     """
+    valid_date(args.date)
     root = data_root()
     entries = _load_day_entries(root, args.date)
     if not entries:

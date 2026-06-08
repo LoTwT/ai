@@ -98,3 +98,5 @@ python3 <skill>/scripts/store.py init --data-root <用户确认的绝对路径> 
 ```
 
 缺数据时 `aggregate` 会 fail-loud（退出码 4），不会凭空估算——这是「summary 不重估」的硬保证。
+
+**日期格式**：所有 `--date` 必须是 `YYYY-MM-DD`（如 `2026-05-30`）。日期同时用作目录段和 entryId 前缀，store 会严格校验（格式 + 真实日历日 + 拒绝路径分隔符），非法日期直接报错——避免 `2026/05/30` 这类把记录写到错位置、或 `../..` 这类路径穿越。用 `store.py today` 取当天日期最稳。
