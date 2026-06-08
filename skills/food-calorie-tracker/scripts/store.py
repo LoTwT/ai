@@ -101,8 +101,11 @@ def read_json_arg(path: str):
 
 
 def write_json(path: Path, obj):
+    # 原子写：先写 .tmp 再 os.replace，避免 foods.json 等多次读改写的文件写一半被中断而损坏
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(obj, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(json.dumps(obj, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    os.replace(tmp, path)
 
 
 def day_dir(root: Path, date: str) -> Path:
@@ -114,12 +117,28 @@ def compute_total(items) -> int:
 
 
 def normalize_items(items):
-    """补齐派生字段：未给 kcal 时由 grams×kcalPer100g/100 算；四舍五入。"""
+    """补齐派生字段并保证每项都有可计算的 kcal；算不出就 fail-loud（绝不静默当 0）。
+
+    支持三种来源（与 estimation.md / storage.md 文档一致）：
+      - 直接给 kcal
+      - grams + kcalPer100g（常规估算）
+      - kcalPerServing [+ servings]（品牌整份 SKU，如某杯型奶茶/咖啡）
+    显示重量 grams 缺失时用 typicalGrams 兜底，仍无则记 0（不影响热量）。
+    """
     out = []
-    for it in items:
-        it = dict(it)
-        if "kcal" not in it and "grams" in it and "kcalPer100g" in it:
+    for raw in items:
+        it = dict(raw)
+        if "grams" not in it and "typicalGrams" in it:
+            it["grams"] = it["typicalGrams"]
+        it.setdefault("grams", 0)
+        if it.get("kcal") not in (None, ""):
+            it["kcal"] = int(round(float(it["kcal"])))
+        elif it.get("kcalPer100g") is not None:
             it["kcal"] = int(round(float(it["grams"]) * float(it["kcalPer100g"]) / 100.0))
+        elif it.get("kcalPerServing") is not None:
+            it["kcal"] = int(round(float(it["kcalPerServing"]) * float(it.get("servings", 1))))
+        else:
+            die(f"条目「{it.get('name', '?')}」无法计算热量：需提供 kcal、grams+kcalPer100g、或 kcalPerServing 之一。")
         out.append(it)
     return out
 
@@ -165,6 +184,15 @@ def cmd_status(_):
 
 
 def cmd_init(args):
+    cfgp = config_path()
+    if cfgp.exists() and not args.force:
+        existing = json.loads(cfgp.read_text(encoding="utf-8"))
+        die(
+            f"配置已存在（dataRoot={existing.get('dataRoot')}）。重复 init 会切换数据根、"
+            f"让已有记录从 list/aggregate 中消失（文件仍在旧根）。如确需更换请显式加 --force，"
+            f"并自行迁移旧数据。仅想查看用 `status`。",
+            code=5,
+        )
     root = Path(args.data_root).expanduser()
     if not root.is_absolute():
         die("data-root 必须是绝对路径（首次使用须与用户确认确切落点）。")
@@ -188,13 +216,15 @@ def cmd_today(_):
 
 def _copy_images(root: Path, date: str, entry_id: str, images):
     """把用户图片拷进当日 images/，返回相对 dataRoot 的引用列表。"""
+    # 先校验所有源图都在，再开始拷 —— 避免第 N 张缺失时已拷的前 N-1 张成为孤儿文件
+    srcs = [Path(s).expanduser() for s in images]
+    for s in srcs:
+        if not s.exists():
+            die(f"图片不存在: {s}")
     refs = []
     img_dir = day_dir(root, date) / "images"
     img_dir.mkdir(parents=True, exist_ok=True)
-    for i, src in enumerate(images, 1):
-        src_p = Path(src).expanduser()
-        if not src_p.exists():
-            die(f"图片不存在: {src}")
+    for i, src_p in enumerate(srcs, 1):
         ext = src_p.suffix.lower() or ".jpg"
         dst = img_dir / f"{entry_id}_{i}{ext}"
         shutil.copy2(src_p, dst)
@@ -211,7 +241,10 @@ def cmd_add(args):
     # entryId 前缀用进餐日期（= 落盘目录），保证 _find_entry 快速定位；时间用当前时刻
     ts = f"{args.date}T{now.strftime('%H-%M-%S')}"
     entry_id = f"{ts}_{args.meal}_{secrets.token_hex(2)}"
-    items = normalize_items(read_json_arg(args.items))
+    raw_items = read_json_arg(args.items)
+    if not isinstance(raw_items, list):
+        die("items 文件须是 JSON 数组（[{name, grams, kcalPer100g, ...}, ...]）")
+    items = normalize_items(raw_items)
     if not items:
         die("items 不能为空")
     images = args.images or []
@@ -381,6 +414,8 @@ def cmd_foods_put(args):
     fpath = root / "index" / "foods.json"
     foods = json.loads(fpath.read_text(encoding="utf-8")) if fpath.exists() else {}
     incoming = read_json_arg(args.json)
+    if not isinstance(incoming, dict):
+        die('foods 文件须是 JSON 对象（{"食物名": {kcalPer100g/kcalPerServing, ...}}）')
     # 去重：同名更新、不重复追加
     foods.update(incoming)
     write_json(fpath, foods)
@@ -398,6 +433,7 @@ def build_parser():
     pi = sub.add_parser("init", help="写入配置（用户确认绝对路径后）")
     pi.add_argument("--data-root", required=True)
     pi.add_argument("--timezone", default=None)
+    pi.add_argument("--force", action="store_true", help="覆盖已有配置（会切换数据根，旧数据需自行迁移）")
     pi.set_defaults(func=cmd_init)
 
     sub.add_parser("today", help="按配置时区打印今天日期").set_defaults(func=cmd_today)

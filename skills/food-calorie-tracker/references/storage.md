@@ -12,12 +12,12 @@
 ### 首次使用流程
 
 ```bash
-python <skill>/scripts/store.py propose      # 打印建议的绝对路径 proposedDataRoot
+python3 <skill>/scripts/store.py propose      # 打印建议的绝对路径 proposedDataRoot
 # → 把 proposedDataRoot 念给用户，确认或让其改成别的绝对路径
-python <skill>/scripts/store.py init --data-root <用户确认的绝对路径> [--timezone Asia/Shanghai]
+python3 <skill>/scripts/store.py init --data-root <用户确认的绝对路径> [--timezone Asia/Shanghai]
 ```
 
-`propose` 若发现已初始化，会直接回 `initialized:true` + 现有 dataRoot，此时跳过 init。后续任何命令前都可先 `store.py status` 确认。
+`propose` 若发现已初始化，会直接回 `initialized:true` + 现有 dataRoot，此时跳过 init。后续任何命令前都可先 `store.py status` 确认。`init` 在配置已存在时会拒绝（exit 5），避免误改 dataRoot 让旧记录从 `list`/`aggregate` 消失；确需更换数据根再显式加 `--force`（旧数据需自行迁移）。
 
 ## 目录布局
 
@@ -47,7 +47,7 @@ python <skill>/scripts/store.py init --data-root <用户确认的绝对路径> [
   "entryId": "2026-05-30T12-05-01_lunch_ab12",
   "date": "2026-05-30",
   "mealType": "lunch",
-  "source": { "kind": "image", "refs": ["images/2026-05-30T12-05-01_lunch_1.jpg"] },
+  "source": { "kind": "image", "refs": ["days/2026-05-30/images/2026-05-30T12-05-01_lunch_1.jpg"] },
   "items": [
     { "name": "白米饭", "grams": 200, "kcalPer100g": 115, "kcal": 230, "confidence": "medium", "assumptions": ["按标准饭碗估算"] }
   ],
@@ -59,7 +59,8 @@ python <skill>/scripts/store.py init --data-root <用户确认的绝对路径> [
 ```
 
 - `mealType` ∈ `breakfast` / `lunch` / `dinner` / `snack`（出图时映射为早餐/午餐/晚餐/加餐）。
-- `items[]` 由估算产出（见 `estimation.md`）。`kcal` 省略时 store 会按 `grams×kcalPer100g/100` 补算；`totalKcal` 由 store 求和，不要手填。
+- `items[]` 由估算产出（见 `estimation.md`）。`source.refs` 是相对 dataRoot 的路径（`days/<date>/images/...`），由 store 自己写。
+- 每项热量来源三选一，store 按此顺序补算 `kcal`，都给不出就 fail-loud：① 直接给 `kcal`；② `grams` + `kcalPer100g`；③ 品牌整份 `kcalPerServing`（可带 `servings`，缺省 1，`grams` 缺失时用 `typicalGrams` 当显示重量）。`totalKcal` 由 store 求和，不要手填。
 - `source.kind` = `image`（有图）或 `text`（纯文字描述）。
 - `revisions[]` 由 `edit` 追加，每条含改动时间、note、改动前快照——保留纠正审计，同时保证纠正不会被当成新一餐重复计入。
 

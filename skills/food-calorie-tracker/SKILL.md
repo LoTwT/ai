@@ -22,10 +22,10 @@ description: "通过食物照片或描述记录每日饮食、估算热量、持
 数据存哪由用户用绝对路径确认一次，写进 config，之后自动读。详见 `references/storage.md`。
 
 ```bash
-python <skill>/scripts/store.py status        # 已初始化就跳过下面两步
-python <skill>/scripts/store.py propose        # 打印建议的绝对路径
+python3 <skill>/scripts/store.py status        # 已初始化就跳过下面两步
+python3 <skill>/scripts/store.py propose        # 打印建议的绝对路径
 # → 把建议路径念给用户确认（或让其改成别的绝对路径）
-python <skill>/scripts/store.py init --data-root <用户确认的绝对路径>
+python3 <skill>/scripts/store.py init --data-root <用户确认的绝对路径>
 ```
 
 `<skill>` = 本 skill 在当前环境的安装目录，运行时定位，不要硬编码。
@@ -36,8 +36,8 @@ python <skill>/scripts/store.py init --data-root <用户确认的绝对路径>
 2. **判餐次**：优先用用户明说的；没说就按对话时间/上下文推断（breakfast/lunch/dinner/snack）。
 3. **落盘**：把 items 写成一个临时 JSON（schema 见 `storage.md`），调：
    ```bash
-   python <skill>/scripts/store.py add \
-     --date $(python <skill>/scripts/store.py today) \
+   python3 <skill>/scripts/store.py add \
+     --date $(python3 <skill>/scripts/store.py today) \
      --meal lunch \
      --items /tmp/items.json \
      --images /path/to/photo1.jpg
@@ -64,7 +64,7 @@ python <skill>/scripts/store.py init --data-root <用户确认的绝对路径>
 2. 按 `estimation.md`：种类纠正→重查热量重算；份量纠正→每100g 热量不变、按新份量重算。
 3. 写新的 items JSON，调：
    ```bash
-   python <skill>/scripts/store.py edit \
+   python3 <skill>/scripts/store.py edit \
      --entry-id 2026-05-30T12-05-01_lunch_ab12 \
      --items /tmp/items_fixed.json \
      --note "排骨→红烧肉，重查热量"
@@ -78,11 +78,11 @@ python <skill>/scripts/store.py init --data-root <用户确认的绝对路径>
 
 ```bash
 # 1. 聚合（写 summary.json 证据 + 打印渲染 JSON）
-python <skill>/scripts/store.py aggregate --date 2026-05-30 > /tmp/render.json
+python3 <skill>/scripts/store.py aggregate --date 2026-05-30 > /tmp/render.json
 
 # 2. 出图（脚本依赖 Pillow）
-python -c "import PIL" 2>/dev/null || pip install Pillow --break-system-packages 2>/dev/null || pip install Pillow
-python <skill>/scripts/generate_summary.py --data /tmp/render.json \
+python3 -c "import PIL" 2>/dev/null || pip install Pillow --break-system-packages 2>/dev/null || pip install Pillow
+python3 <skill>/scripts/generate_summary.py --data /tmp/render.json \
   --output <dataRoot>/days/2026-05-30/summary.png
 ```
 
