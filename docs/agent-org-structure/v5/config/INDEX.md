@@ -24,12 +24,12 @@ These files are the versioned canonical snapshot of the shared agent-organizatio
 
 ## Role-Schema Seeds
 
-| Artifact ID | File | Lane |
-| --- | --- | --- |
-| `role-schema.v1.coordination` | [`role-schemas/role-schema.v1.coordination.md`](./role-schemas/role-schema.v1.coordination.md) | Product & Program Coordination |
-| `role-schema.v1.engineering` | [`role-schemas/role-schema.v1.engineering.md`](./role-schemas/role-schema.v1.engineering.md) | Engineering & Production Delivery |
-| `role-schema.v1.experience` | [`role-schemas/role-schema.v1.experience.md`](./role-schemas/role-schema.v1.experience.md) | Experience & Brand |
-| `role-schema.v1.review` | [`role-schemas/role-schema.v1.review.md`](./role-schemas/role-schema.v1.review.md) | Quality & Release Evidence |
+| Artifact ID | File | Version | Lane |
+| --- | --- | --- | --- |
+| `role-schema.v1.coordination` | [`role-schemas/role-schema.v1.coordination.md`](./role-schemas/role-schema.v1.coordination.md) | v1 | Product & Program Coordination |
+| `role-schema.v1.engineering` | [`role-schemas/role-schema.v1.engineering.md`](./role-schemas/role-schema.v1.engineering.md) | v2 | Engineering & Production Delivery |
+| `role-schema.v1.experience` | [`role-schemas/role-schema.v1.experience.md`](./role-schemas/role-schema.v1.experience.md) | v2 | Experience & Brand |
+| `role-schema.v1.review` | [`role-schemas/role-schema.v1.review.md`](./role-schemas/role-schema.v1.review.md) | v1 | Quality & Release Evidence |
 
 ## GitHub Contribution Modes
 
