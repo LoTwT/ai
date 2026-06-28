@@ -2,7 +2,8 @@
 
 ## Current
 
-- [v5](./v5/README.md): Raft multi-agent organization design plus reusable config assets.
+- [v5 design](./v5/design.md): Raft multi-agent organization design.
+- [v5 config assets](./v5/config/INDEX.md): reusable rule packs, role-schema seeds, reporting contract, and verification hooks.
 
 ## Historical Drafts
 
