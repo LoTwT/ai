@@ -7,7 +7,7 @@
 <!-- governance sidecar: not copied into agent MEMORY; recorded in the Artifact Index / §11 inventory -->
 artifact_id: rule-pack.v1.global
 version: v3                 # v3: replaced the GitHub write default/capability map with a project-agnostic GitHub Contribution Identity & Write Policy (+ squash-only & delegated-merge)
-owner: "approver @lo-user / maintainer @Evelyn"
+owner: "approver @lo-user / maintainer @Evelyn"   # confirmed @lo-user 2026-06-28
 source_status: team-convention
 applies_to: all agents
 status: current
@@ -19,8 +19,8 @@ verification_hooks:
   - verify.reaction-duplicate-boundary
   - verify.github-identity-baseline
   - verify.github-write-gates        # provisioning-gated write + precheck + PR/human-review (replaces v2's no-write-by-default)
-  - verify.squash-merge              # NEW — @Dialyn to add definition in verification-hooks.v1
-  - verify.delegated-merge           # NEW — @Dialyn to add definition in verification-hooks.v1
+  - verify.squash-merge              # defined in verification-hooks.v1.1
+  - verify.delegated-merge           # defined in verification-hooks.v1.1
 ```
 
 ```yaml

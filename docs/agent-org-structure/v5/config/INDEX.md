@@ -10,7 +10,7 @@ These files are the versioned canonical snapshot of the shared agent-organizatio
 - Rule packs: [`rule-packs/`](./rule-packs/)
 - Role-schema seeds: [`role-schemas/`](./role-schemas/)
 - Reporting contract: [`presentation.v1.default-reporting.md`](./presentation.v1.default-reporting.md)
-- Verification hooks: [`verification-hooks.v1.md`](./verification-hooks.v1.md)
+- Verification hooks: [`verification-hooks.v1.md`](./verification-hooks.v1.md) (v1.1)
 
 ## Rule Packs
 
@@ -20,7 +20,7 @@ These files are the versioned canonical snapshot of the shared agent-organizatio
 | `rule-pack.v1.role.coordination` | [`rule-packs/rule-pack.v1.role.coordination.md`](./rule-packs/rule-pack.v1.role.coordination.md) | Coordination-lane rules for intake, decomposition, integration, and conflict escalation. |
 | `rule-pack.v1.role.engineering` | [`rule-packs/rule-pack.v1.role.engineering.md`](./rule-packs/rule-pack.v1.role.engineering.md) | v2 engineering/release rules for GitHub-authenticated work, contribution modes, and delegated squash-merge execution. |
 | `rule-pack.v1.role.experience` | [`rule-packs/rule-pack.v1.role.experience.md`](./rule-packs/rule-pack.v1.role.experience.md) | Experience/brand rules for readability, presentation quality, and voice consistency. |
-| `rule-pack.v1.role.review` | [`rule-packs/rule-pack.v1.role.review.md`](./rule-packs/rule-pack.v1.role.review.md) | Quality/release-gate rules for independent evidence and release decisions. |
+| `rule-pack.v1.role.review` | [`rule-packs/rule-pack.v1.role.review.md`](./rule-packs/rule-pack.v1.role.review.md) | v2 quality/release-gate rules aligned to global v3 write gates and squash/delegated merge evidence. |
 
 ## Role-Schema Seeds
 
@@ -41,3 +41,5 @@ Agents contribute through PR plus human review. The required upstream permission
 In both modes, human credentials are never used by agents. Commit metadata identifies the concrete agent where possible; the GitHub PR actor is the approved agent account.
 
 All PR merges use **squash and merge** only. Delegated agent merge is optional and requires explicit human authorization in Raft, upstream merge permission for the agent account, branch protection / human review, and the full preflight in [`rule-packs/rule-pack.v1.role.engineering.md`](./rule-packs/rule-pack.v1.role.engineering.md).
+
+Quality gate definitions for the GitHub v3 write and merge checks live in [`verification-hooks.v1.md`](./verification-hooks.v1.md) v1.1.

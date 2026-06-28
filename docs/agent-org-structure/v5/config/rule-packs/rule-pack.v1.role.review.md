@@ -1,16 +1,16 @@
 # Rule Pack: Review / Quality Lane
 
 > Standalone role-specific rule pack extracted from `example-config-reviewer-EN.md` for the shared artifact library.
-> This pack is intentionally minimal and DRY: global collaboration, GitHub no-write defaults, credential hygiene, and Presentation Contract behavior are imported from shared artifacts rather than copied here.
+> This pack is intentionally minimal and DRY: global collaboration, GitHub contribution policy, credential hygiene, and Presentation Contract behavior are imported from shared artifacts rather than copied here.
 
 ```yaml
 rule_pack_id: rule-pack.v1.role.review
-version: v1
+version: v2
 owner: "@Dialyn"
 owner_lane: "Quality / Release Evidence"
 source_status: team-convention
 applies_to: reviewer / quality agents
-governed_by_or_source: "team-convention / Reviewer example; BODY v1.4 §12 release gate; rule-pack r3 verification sign-off"
+governed_by_or_source: "team-convention / Reviewer example; BODY v1.4 §12 release gate; rule-pack r3 verification sign-off; rule-pack.v1.global v3 GitHub Contribution Identity & Write Policy"
 status: current
 used_by:
   - role-schema.v1.review
@@ -28,7 +28,9 @@ verification_hooks:
   - verify.feature-coverage
   - verify.source-status
   - verify.seed-sidecar-split
-  - verify.no-write-by-default
+  - verify.github-write-gates
+  - verify.squash-merge
+  - verify.delegated-merge
 acceptance:
   - "A review record states the release decision before detail."
   - "Every Passed decision cites the evidence chain used for review."
@@ -36,11 +38,12 @@ acceptance:
   - "Every Deferred decision names who accepts the risk or what decision is still needed."
   - "Every Source-Pending decision identifies the missing source and does not present the claim as verified."
   - "Reviewer does not take over implementation unless explicitly handed off."
-  - "Reviewer does not perform GitHub write actions by default; repo writes follow the global no-write / engineering handoff policy."
+  - "Reviewer is not currently provisioned for GitHub writes; without runtime-scoped agent credentials and a passing precheck, it stops before any write."
+  - "If explicitly provisioned for a repo, reviewer GitHub writes follow the global contribution gates: approved agent account, scoped credentials, precheck, PR/human-review path, and squash-only merge evidence."
 ```
 
 ## Artifact Index Row
 
 | artifact_id | version | title | owner | status | used_by | governed_by_or_source | last_verification | notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `rule-pack.v1.role.review` | v1 | Review / Quality lane rule pack | @Dialyn | current | `role-schema.v1.review`; Reviewer/Quality agents | team-convention / Reviewer example; BODY v1.4 §12 release gate | `36c13d01` rule-pack r3 final verification sign-off; `fdb99180` Reviewer example | Minimal role pack; imports global baseline, Presentation Contract, and GitHub no-write defaults by id. |
+| `rule-pack.v1.role.review` | v2 | Review / Quality lane rule pack | @Dialyn | current | `role-schema.v1.review`; Reviewer/Quality agents | team-convention / Reviewer example; BODY v1.4 §12 release gate; global v3 GitHub policy | 2026-06-28 Dialyn re-adopt global v3 | Minimal role pack; imports global baseline, Presentation Contract, and GitHub contribution policy by id. |
