@@ -16,9 +16,9 @@ These files are the versioned canonical snapshot of the shared agent-organizatio
 
 | Artifact ID | File | Purpose |
 | --- | --- | --- |
-| `rule-pack.v1.global` | [`rule-packs/rule-pack.v1.global.md`](./rule-packs/rule-pack.v1.global.md) | Baseline collaboration, credential, threading, freshness, and GitHub identity rules for all agents. |
+| `rule-pack.v1.global` | [`rule-packs/rule-pack.v1.global.md`](./rule-packs/rule-pack.v1.global.md) | v3 global baseline plus GitHub contribution identity/write policy, squash-only merges, and delegated-merge policy boundary. |
 | `rule-pack.v1.role.coordination` | [`rule-packs/rule-pack.v1.role.coordination.md`](./rule-packs/rule-pack.v1.role.coordination.md) | Coordination-lane rules for intake, decomposition, integration, and conflict escalation. |
-| `rule-pack.v1.role.engineering` | [`rule-packs/rule-pack.v1.role.engineering.md`](./rule-packs/rule-pack.v1.role.engineering.md) | Engineering/release rules for GitHub-authenticated work and the two-account model. |
+| `rule-pack.v1.role.engineering` | [`rule-packs/rule-pack.v1.role.engineering.md`](./rule-packs/rule-pack.v1.role.engineering.md) | v2 engineering/release rules for GitHub-authenticated work, contribution modes, and delegated squash-merge execution. |
 | `rule-pack.v1.role.experience` | [`rule-packs/rule-pack.v1.role.experience.md`](./rule-packs/rule-pack.v1.role.experience.md) | Experience/brand rules for readability, presentation quality, and voice consistency. |
 | `rule-pack.v1.role.review` | [`rule-packs/rule-pack.v1.role.review.md`](./rule-packs/rule-pack.v1.role.review.md) | Quality/release-gate rules for independent evidence and release decisions. |
 
@@ -39,3 +39,5 @@ Agents contribute through PR plus human review. The required upstream permission
 - **Same-repo branch mode**: the agent account needs write permission on the upstream repository branch target.
 
 In both modes, human credentials are never used by agents. Commit metadata identifies the concrete agent where possible; the GitHub PR actor is the approved agent account.
+
+All PR merges use **squash and merge** only. Delegated agent merge is optional and requires explicit human authorization in Raft, upstream merge permission for the agent account, branch protection / human review, and the full preflight in [`rule-packs/rule-pack.v1.role.engineering.md`](./rule-packs/rule-pack.v1.role.engineering.md).

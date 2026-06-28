@@ -1,7 +1,7 @@
 # Seed: role-schema.v1.engineering — owner @Anby (Engineering / Builder)
 
 > Copy the fenced block below into the agent's MEMORY (its Role Schema). Identity (name / description / runtime, computer for execution lanes) and channel membership are set on the Raft side, not here. `Rule Imports` and `presentation_contract_ref` resolve by id via the Artifact Index.
-> Source: BODY v1.4 §18 capstone.
+> Source: BODY v1.4 §18 capstone; Access Requirement updated 2026-06-28 to align with fork/same-repo contribution modes.
 
 ```markdown
 # Role Schema: Engineering & Production Delivery (role-schema.v1.engineering)
