@@ -1,6 +1,6 @@
 # Rule Pack: Global Baseline (every agent imports this)
 
-> Consolidated `rule-pack.v1.global` v2 = the original team baseline + the 2026-06-28 custom-rule additions (per @lo-user). Self-contained so the artifact resolves on its own; nothing here points to an undefined source.
+> Consolidated `rule-pack.v1.global` v3 = the v2 baseline (original team baseline + the 2026-06-28 custom-rule additions, per @lo-user) plus the 2026-06-28 GitHub Contribution Identity & Write Policy update (replacing the old write-default / capability map). Self-contained so the artifact resolves on its own; nothing here points to an undefined source.
 > Sidecar (governance metadata) is NOT copied into agent MEMORY; the copyable rule pack below is imported by id (`Rule Imports: rule-pack.v1.global`).
 
 ```yaml
