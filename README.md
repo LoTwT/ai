@@ -8,5 +8,5 @@
 ## docs
 
 - [Claude Code 项目文件结构最佳实践](./docs/project-structure-best-practice.md)
-- [Agent Org Structure](./docs/agent-org-structure/README.md): 在 Raft 中组织、配置、维护一支人–AI 协作 agent 团队的架构设计；历史版本归档于同目录下的 `v1-agent-team.md`、`v2-agent-org.md`、`v3-agent-org.md`、`v4-agent-org.md`。
+- [Agent Org Structure](./docs/agent-org-structure/README.md): 在 Raft 中组织、配置、维护一支人–AI 协作 agent 团队的架构设计；配套规则与角色配置资产见 [`config/`](./docs/agent-org-structure/config/INDEX.md)，历史版本归档于同目录下的 `v1-agent-team.md`、`v2-agent-org.md`、`v3-agent-org.md`、`v4-agent-org.md`。
 - [npm Release Pipeline — From Zero To Shipped](./docs/npm-release-from-zero-to-shipped.md): npm 包从零到 OIDC 自动发版的端到端 runbook。`LoTwT/design-system` V0.0.1 / V0.0.2 是 worked example。
