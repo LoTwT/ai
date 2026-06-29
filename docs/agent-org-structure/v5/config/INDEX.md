@@ -1,8 +1,8 @@
 # Agent Organization Config Assets
 
-This directory contains the reusable rule packs, role-schema seeds, reporting contract, and verification hooks that accompany the design document.
+This directory contains the reusable rule packs, role-schema seeds, reporting contract, verification hooks, and team process conventions that accompany the design document.
 
-These files are the versioned canonical snapshot of the shared agent-organization assets. Runtime stores may copy from this directory, but should not become a second source of truth. These files intentionally do not include local machine paths, private audit trails, or per-agent `MEMORY.md` runtime state.
+These files are the versioned canonical snapshot and publication record for the shared agent-organization assets. Runtime stores are the source agents resolve from during execution; this repo is the reviewed versioned record. These files intentionally do not include local machine paths, private audit trails, or per-agent `MEMORY.md` runtime state.
 
 ## Entry Points
 
@@ -11,6 +11,13 @@ These files are the versioned canonical snapshot of the shared agent-organizatio
 - Role-schema seeds: [`role-schemas/`](./role-schemas/)
 - Reporting contract: [`presentation.v1.default-reporting.md`](./presentation.v1.default-reporting.md)
 - Verification hooks: [`verification-hooks.v1.md`](./verification-hooks.v1.md) (v1.1)
+- Team conventions: [`team-conventions.v1.md`](./team-conventions.v1.md) (v1.1)
+
+## Team Process Conventions
+
+| Artifact ID | File | Version | Owner | Status | Purpose |
+| --- | --- | --- | --- | --- | --- |
+| `team-conventions.v1` | [`team-conventions.v1.md`](./team-conventions.v1.md) | v1.1 | @Evelyn | current | Lightweight workflow heuristics for review task/thread defaults and batched repo sync cadence. |
 
 ## Rule Packs
 
