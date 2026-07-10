@@ -1,15 +1,21 @@
 # Verification Hooks — Acceptance Criteria (v1.2)
 
 > The acceptance criteria for every `verify.*` id referenced by the rule packs, seeds, and the Presentation Contract. Used during agent dry-run / release-gate verification (Quality lane), not copied into agent MEMORY.
-> **Owner @Dialyn (Quality / Release Evidence)** — please confirm. The custom-rule + GitHub group (first 9) is verbatim from the team-signed-off rule-pack r3; the config dry-run group is from BODY v1.4 §12 + the Coordinator/Reviewer worked examples.
+> **Owner @Dialyn (Quality / Release Evidence)** — confirmed in the metadata below. The custom-rule + GitHub group (first 9) is verbatim from the team-signed-off rule-pack r3; the config dry-run group is from BODY v1.4 §12 + the Coordinator/Reviewer worked examples.
 
 ```yaml
 artifact_id: verification-hooks.v1
 version: v1.2
 owner: "@Dialyn"
-source_status: team-convention
+source_status:
+  - team-convention
+  - agent-manual-or-observed-cli
 status: current
-governed_by_or_source: "rule-pack r3 verification sign-off; rule-pack.v1.global v3 GitHub Contribution Identity & Write Policy; rule-pack.v1.role.engineering v2; team-conventions.v1 v1.2; BODY v1.4 §12 / §11.6; Coordinator + Reviewer worked examples"
+governed_by_or_source: "rule-pack r3 verification sign-off; rule-pack.v1.global v3 GitHub Contribution Identity & Write Policy; rule-pack.v1.role.engineering v2; team-conventions.v1 v1.2; observed Raft CLI command surface 2026-07-10; BODY v1.4 §12 / §11.6; Coordinator + Reviewer worked examples"
+Source/Evidence:
+  - "team-convention: configured-state, propagation, provider-execution, workload-evaluation, and failure-handling boundaries"
+  - "agent-manual-or-observed-cli: raft profile show --json and raft server info --full help/output observed 2026-07-10; raft server info --full reported daemon v0.72.4; evidence record: Raft #daily task #7"
+  - "version boundary: the local raft --version output was the non-semantic value 0.0.0, so this artifact makes no standalone CLI package-version claim; re-run the command-surface check after a Raft CLI or daemon change; unavailable or contradictory required fields are pending-source and cannot pass the gate"
 owner_confirmed: "@Dialyn 2026-07-10: v1.2 adds configured-state, propagation, provider-execution, and workload-evaluation evidence boundaries"
 ```
 
@@ -36,4 +42,4 @@ owner_confirmed: "@Dialyn 2026-07-10: v1.2 adds configured-state, propagation, p
 - **verify.seed-sidecar-split** — the MEMORY seed holds only runtime content; governance metadata (versions, source map, audit fields) lives in the Artifact Index, not in MEMORY.
 - **verify.thread-update** — a progress-update lands in the relevant thread and is paced (sent on real progress or a blocker, not noise).
 - **verify.feature-coverage** — every Raft feature used is classified used / conditional / out-of-scope in the §17.3 coverage matrix.
-- **verify.source-status** — every mechanism / field is source-tagged (raft-docs-verified / agent-manual-or-observed / ax-article / team-convention / pending-source); non-official discipline is not written as a Raft switch.
+- **verify.source-status** — every mechanism / field is source-tagged (raft-docs-verified / agent-manual-or-observed-cli / ax-article / team-convention / pending-source); non-official discipline is not written as a Raft switch.

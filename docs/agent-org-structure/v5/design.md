@@ -250,7 +250,7 @@ Verification hooks 是 §12 的入口，不是另一套测试系统。每个 hoo
 
 | Hook | 检查什么 | 证据 |
 | --- | --- | --- |
-| `verify.profile-runtime-membership` | name、description、setup path、runtime/computer、channel membership 是否一致 | profile/server info/channel members 记录 |
+| `verify.profile-runtime-membership` | profile、runtime、membership 与当前进程 configured state 是否一致；字段级 pass/fail 以 canonical hook 为准 | [`config/verification-hooks.v1.md`](./config/verification-hooks.v1.md) 当前版本 + 对应 gate record；本表不复制字段级 pass scope |
 | `verify.mention-routing` | @mention 能送到正确 owner，agent 知道 act、defer 或 stay silent | mention dry run thread |
 | `verify.claim-conflict` | 认领类型、单 owner、review 参与边界是否正确 | task/thread record |
 | `verify.thread-update` | 进展是否留在同一 task/message thread，是否避免 nested-thread modeling | thread transcript |
@@ -268,7 +268,7 @@ Release gate 的作用不是替正文再做一轮大纲审查，而是在配置�
 
 Release gate 只在三个前置资产齐备后运行：§11 的团队矩阵、§13.A 的交付表达契约，以及 §18 的一条龙配置范例。没有这些资产，dry run 会变成抽象讨论；有了它们，检查就能落到具体 agent、channel、thread、task、MEMORY seed 和 handoff 形态上。
 
-第一组检查确认"这支队伍能被配置出来"。`verify.profile-runtime-membership` 检查每个 agent 的身份、runtime、computer 与频道成员关系是否一致；`verify.seed-sidecar-split` 检查 copyable seed 和 governance sidecar 是否分层清楚，避免把说明性文档误当作运行中 MEMORY，或把 agent 自维护的 live MEMORY 反向写死到正文里。这里的失败通常不是发布风险，而是配置包还没准备好，应回到 §7–§11 修正。
+第一组检查确认"这支队伍能被配置出来"。`verify.profile-runtime-membership` 用于核对 profile、runtime、membership 与当前进程 configured state；字段级 acceptance criteria 只由 [`config/verification-hooks.v1.md`](./config/verification-hooks.v1.md) 当前版本定义，本节不复制 pass scope。`verify.seed-sidecar-split` 检查 copyable seed 和 governance sidecar 是否分层清楚，避免把说明性文档误当作运行中 MEMORY，或把 agent 自维护的 live MEMORY 反向写死到正文里。这里的失败通常不是发布风险，而是配置包还没准备好，应回到 §7–§11 修正。
 
 第二组检查确认"来源与边界没有混写"。`verify.source-status` 要求每个机制或字段标明来源层级：Raft 原语、agent manual / observed CLI、AX 文章、team convention 或 pending source。`verify.feature-coverage` 则核对 §17.3：正文实际使用到的 Raft 能力必须在 coverage matrix 里有 used / conditional / out-of-scope 分类、影响章节和行级 source。非官方纪律不得写成 Raft 开关；如果分类变化影响 scope，就回到大纲 patch，而不是在正文里悄悄改。
 
@@ -591,7 +591,7 @@ Deliver engineering work with clear ownership, evidence, verification, and hando
 
 | Check | What passes |
 | --- | --- |
-| `verify.profile-runtime-membership` | name、description、setup path、channels 正确；managed path 有 runtime + computer，external path 有 completed login + profile |
+| `verify.profile-runtime-membership` | 通过 [`config/verification-hooks.v1.md`](./config/verification-hooks.v1.md) 当前版本定义的 canonical acceptance criteria；本表不复制字段级 pass scope |
 | `verify.mention-routing` | human 能 @mention agent；agent 能判断 act、defer 或 stay silent |
 | `verify.claim-conflict` | agent 只 claim 允许的任务类型，不复制另一个 owner 的工作 |
 | `verify.thread-update` | progress 进入 task/message thread，不把深层拆解写成 nested thread |
