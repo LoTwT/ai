@@ -1,16 +1,22 @@
-# Verification Hooks — Acceptance Criteria (v1.1)
+# Verification Hooks — Acceptance Criteria (v1.2)
 
 > The acceptance criteria for every `verify.*` id referenced by the rule packs, seeds, and the Presentation Contract. Used during agent dry-run / release-gate verification (Quality lane), not copied into agent MEMORY.
-> **Owner @Dialyn (Quality / Release Evidence)** — please confirm. The custom-rule + GitHub group (first 9) is verbatim from the team-signed-off rule-pack r3; the config dry-run group is from BODY v1.4 §12 + the Coordinator/Reviewer worked examples.
+> **Owner @Dialyn (Quality / Release Evidence)** — confirmed in the metadata below. The custom-rule + GitHub group (first 9) is verbatim from the team-signed-off rule-pack r3; the config dry-run group is from BODY v1.4 §12 + the Coordinator/Reviewer worked examples.
 
 ```yaml
 artifact_id: verification-hooks.v1
-version: v1.1
+version: v1.2
 owner: "@Dialyn"
-source_status: team-convention
+source_status:
+  - team-convention
+  - agent-manual-or-observed-cli
 status: current
-governed_by_or_source: "rule-pack r3 verification sign-off; rule-pack.v1.global v3 GitHub Contribution Identity & Write Policy; rule-pack.v1.role.engineering v2; BODY v1.4 §12 / §11.6; Coordinator + Reviewer worked examples"
-owner_confirmed: "@Dialyn 2026-06-28 — v1.1 adds GitHub v3 write/merge gates"
+governed_by_or_source: "rule-pack r3 verification sign-off; rule-pack.v1.global v3 GitHub Contribution Identity & Write Policy; rule-pack.v1.role.engineering v2; team-conventions.v1 v1.2; observed Raft CLI command surface 2026-07-10; BODY v1.4 §12 / §11.6; Coordinator + Reviewer worked examples"
+Source/Evidence:
+  - "team-convention: configured-state, propagation, provider-execution, workload-evaluation, and failure-handling boundaries"
+  - "agent-manual-or-observed-cli: raft profile show --json and raft server info --full help/output observed 2026-07-10; concrete runtime/daemon/CLI values, raw output, and task/thread locators stay in the per-run live evidence record rather than this versioned config"
+  - "version boundary: re-run the command-surface check after a Raft CLI or daemon change; unavailable or contradictory required fields are pending-source and cannot pass the gate"
+owner_confirmed: "@Dialyn 2026-07-10: v1.2 adds configured-state, propagation, provider-execution, and workload-evaluation evidence boundaries"
 ```
 
 ## Custom-rule + GitHub group
@@ -28,7 +34,7 @@ owner_confirmed: "@Dialyn 2026-06-28 — v1.1 adds GitHub v3 write/merge gates"
 - **verify.delegated-merge** — For an agent-executed merge, pass only if all delegated-merge conditions are evidenced before execution: explicit human authorization in Raft with repo + PR number + squash merge instruction; active actor is the approved agent account; the agent account has merge permission on the base repo; branch protection requires human review; current PR head SHA matches the reviewed/authorized head; required checks are passing or explicitly absent; human review approval exists; no blocking reviews remain; merge method is squash. If head/checks/review/base/account/scope drift, the agent stops and requests fresh authorization. Evidence after merge: final PR state, squash commit, branch deletion result, and task update.
 
 ## Config dry-run group (BODY §12 + worked examples)
-- **verify.profile-runtime-membership** — name / description / runtime consistent; channels and computer correct on the Raft side.
+- **verify.profile-runtime-membership**: Pass only when `raft profile show --json` matches the expected profile identity, description, runtime, and computer; joined channels are correct; and `raft server info --full` reports the configured runtime, model, reasoning, and daemon fields for the current agent process. Record only the fields needed for the check; do not copy host paths or other private runtime details into public artifacts. UI or schema acceptance and `Current Runtime` prove configured state only. Use runtime and adapter evidence to prove value propagation; use provider request or response evidence to prove execution; use representative workload evaluation for claims about quality, latency, cost, or delegation. If the required evidence layer is unavailable or contradictory, report `Source-Pending` or fail the gate instead of inferring support.
 - **verify.mention-routing** — a human / coordinator can @mention the agent to route a request; it acts, defers, or stays silent appropriately.
 - **verify.claim-conflict** — the agent claims only its lane's task types; it does not take over another agent's claimed work.
 - **verify.handoff-review** — a final-handoff carries the §4 canonical schema (goal / current state / changes or evidence / verification / risks or open items / next owner or decision needed) so the receiver need not re-ask for basic context.
@@ -36,4 +42,4 @@ owner_confirmed: "@Dialyn 2026-06-28 — v1.1 adds GitHub v3 write/merge gates"
 - **verify.seed-sidecar-split** — the MEMORY seed holds only runtime content; governance metadata (versions, source map, audit fields) lives in the Artifact Index, not in MEMORY.
 - **verify.thread-update** — a progress-update lands in the relevant thread and is paced (sent on real progress or a blocker, not noise).
 - **verify.feature-coverage** — every Raft feature used is classified used / conditional / out-of-scope in the §17.3 coverage matrix.
-- **verify.source-status** — every mechanism / field is source-tagged (raft-docs-verified / agent-manual-or-observed / ax-article / team-convention / pending-source); non-official discipline is not written as a Raft switch.
+- **verify.source-status** — every mechanism / field is source-tagged (raft-docs-verified / agent-manual-or-observed-cli / ax-article / team-convention / pending-source); non-official discipline is not written as a Raft switch.

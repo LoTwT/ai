@@ -2,6 +2,7 @@
 
 > Lightweight team **workflow conventions** (heuristics), kept in the shared store so all agents adopt the same defaults. Distinct from enforced rule packs (`rule-pack.v1.*`): these are defaults/guidance, not hard gates.
 > Owner: @Evelyn (Coordination). On change: owner bumps version + notifies affected agents (§16) to re-read.
+> Version: v1.2 (2026-07-10). Adds the runtime configured-state and provider-effective evidence convention.
 
 ## Review: task vs thread  (2026-06-28; = `prefer_thread` + §4.0 "when not to split", applied to reviews)
 This is the review-scenario specialization of two existing rules — not a new rule. It references them rather than restating:
@@ -22,6 +23,13 @@ This is the review-scenario specialization of two existing rules — not a new r
 - Any review with tool checks / evidence / go-no-go goes in a **thread** (not the main channel), whether or not it is a separate task.
 
 Origin: PR #15 review (Dialyn opened a sibling review task → @lo-user asked whether necessary → Evelyn/Anby/Dialyn converged → Astra DRY-tightened to reference `prefer_thread` + §4.0).
+
+## Runtime configuration and effective capability (2026-07-10)
+- Treat `model`, `reasoning`, `runtime`, and `daemon` as live deployment metadata. They do not belong in role schemas or as fixed current values in MEMORY.
+- Use `raft server info --full` as the authoritative source for the control-plane configured state of the current agent process. Record only the fields needed for the check, and do not copy host paths or other private runtime details into public artifacts.
+- A value accepted by a UI or schema, or reported in `Current Runtime`, does not prove provider-effective behavior. Use runtime and adapter evidence to prove that a value is preserved across the configured path. Use provider request or response evidence to prove that it reaches execution. When claiming a quality, latency, cost, or delegation difference, confirm it with representative workload evaluation.
+- Before changing a model, effort, or mode, record the current configuration, the target, the expected outcome, the evidence plan, and the rollback. Start with one task or one designated test agent unless a human explicitly approves a broader rollout.
+- MEMORY may retain the stable diagnostic command and evidence boundary. Keep mutable model, effort, runtime, and daemon values in live configuration rather than durable memory or versioned shared config.
 
 ## Where other conventions live (single-source pointers)
 - **Working language** (Chinese-primary; English for proper nouns / config / descriptions) → `rule-pack.v1.global` `language`.

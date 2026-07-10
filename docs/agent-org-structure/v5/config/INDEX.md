@@ -10,14 +10,19 @@ These files are the versioned canonical snapshot and publication record for the 
 - Rule packs: [`rule-packs/`](./rule-packs/)
 - Role-schema seeds: [`role-schemas/`](./role-schemas/)
 - Reporting contract: [`presentation.v1.default-reporting.md`](./presentation.v1.default-reporting.md)
-- Verification hooks: [`verification-hooks.v1.md`](./verification-hooks.v1.md) (v1.1)
-- Team conventions: [`team-conventions.v1.md`](./team-conventions.v1.md) (v1.1)
+- Verification hooks: [`verification-hooks.v1.md`](./verification-hooks.v1.md) (v1.2)
+- Team conventions: [`team-conventions.v1.md`](./team-conventions.v1.md) (v1.2)
+
+## Current Change Notes
+
+- `team-conventions.v1` v1.2 adds the runtime configured-state and provider-effective evidence convention.
+- `verification-hooks.v1` v1.2 adds configured-state, propagation, provider-execution, and workload-evaluation evidence boundaries.
 
 ## Team Process Conventions
 
 | Artifact ID | File | Version | Owner | Status | Purpose |
 | --- | --- | --- | --- | --- | --- |
-| `team-conventions.v1` | [`team-conventions.v1.md`](./team-conventions.v1.md) | v1.1 | @Evelyn | current | Lightweight workflow heuristics for review task/thread defaults and batched repo sync cadence. |
+| `team-conventions.v1` | [`team-conventions.v1.md`](./team-conventions.v1.md) | v1.2 | @Evelyn | current | Lightweight workflow heuristics for review task/thread defaults, batched repo sync cadence, and runtime configured-state/provider-effective evidence. |
 
 ## Rule Packs
 
@@ -49,4 +54,4 @@ In both modes, human credentials are never used by agents. Commit metadata ident
 
 All PR merges use **squash and merge** only. Delegated agent merge is optional and requires explicit human authorization in Raft, upstream merge permission for the agent account, branch protection / human review, and the full preflight in [`rule-packs/rule-pack.v1.role.engineering.md`](./rule-packs/rule-pack.v1.role.engineering.md).
 
-Quality gate definitions for the GitHub v3 write and merge checks live in [`verification-hooks.v1.md`](./verification-hooks.v1.md) v1.1.
+Quality gate definitions for the GitHub v3 write and merge checks, including the configured-state and provider-effective evidence boundaries, live in [`verification-hooks.v1.md`](./verification-hooks.v1.md) v1.2.
