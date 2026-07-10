@@ -17,6 +17,8 @@ These files are the versioned canonical snapshot and publication record for the 
 
 - `team-conventions.v1` v1.2 adds the runtime configured-state and provider-effective evidence convention.
 - `verification-hooks.v1` v1.2 adds configured-state, propagation, provider-execution, and workload-evaluation evidence boundaries.
+- `role-schema.v1.experience` v3 expands the Experience lane to product UI/UX ownership, evidence access, acceptance criteria, Engineering handoff, and user-facing escalation boundaries.
+- `rule-pack.v1.role.experience` v2 adds product UI/UX evidence and Engineering implementation-handoff discipline while retaining the existing presentation, readability, and voice rules.
 
 ## Team Process Conventions
 
@@ -31,7 +33,7 @@ These files are the versioned canonical snapshot and publication record for the 
 | `rule-pack.v1.global` | [`rule-packs/rule-pack.v1.global.md`](./rule-packs/rule-pack.v1.global.md) | v3 global baseline plus GitHub contribution identity/write policy, squash-only merges, and delegated-merge policy boundary. |
 | `rule-pack.v1.role.coordination` | [`rule-packs/rule-pack.v1.role.coordination.md`](./rule-packs/rule-pack.v1.role.coordination.md) | Coordination-lane rules for intake, decomposition, integration, and conflict escalation. |
 | `rule-pack.v1.role.engineering` | [`rule-packs/rule-pack.v1.role.engineering.md`](./rule-packs/rule-pack.v1.role.engineering.md) | v2 engineering/release rules for GitHub-authenticated work, contribution modes, and delegated squash-merge execution. |
-| `rule-pack.v1.role.experience` | [`rule-packs/rule-pack.v1.role.experience.md`](./rule-packs/rule-pack.v1.role.experience.md) | Experience/brand rules for readability, presentation quality, and voice consistency. |
+| `rule-pack.v1.role.experience` | [`rule-packs/rule-pack.v1.role.experience.md`](./rule-packs/rule-pack.v1.role.experience.md) | v2 experience/brand rules for product UI/UX evidence, Engineering handoff, readability, presentation quality, and voice consistency. |
 | `rule-pack.v1.role.review` | [`rule-packs/rule-pack.v1.role.review.md`](./rule-packs/rule-pack.v1.role.review.md) | v2 quality/release-gate rules aligned to global v3 write gates and squash/delegated merge evidence. |
 
 ## Role-Schema Seeds
@@ -40,7 +42,7 @@ These files are the versioned canonical snapshot and publication record for the 
 | --- | --- | --- | --- |
 | `role-schema.v1.coordination` | [`role-schemas/role-schema.v1.coordination.md`](./role-schemas/role-schema.v1.coordination.md) | v1 | Product & Program Coordination |
 | `role-schema.v1.engineering` | [`role-schemas/role-schema.v1.engineering.md`](./role-schemas/role-schema.v1.engineering.md) | v2 | Engineering & Production Delivery |
-| `role-schema.v1.experience` | [`role-schemas/role-schema.v1.experience.md`](./role-schemas/role-schema.v1.experience.md) | v2 | Experience & Brand |
+| `role-schema.v1.experience` | [`role-schemas/role-schema.v1.experience.md`](./role-schemas/role-schema.v1.experience.md) | v3 | Experience & Brand |
 | `role-schema.v1.review` | [`role-schemas/role-schema.v1.review.md`](./role-schemas/role-schema.v1.review.md) | v1 | Quality & Release Evidence |
 
 ## GitHub Contribution Modes
