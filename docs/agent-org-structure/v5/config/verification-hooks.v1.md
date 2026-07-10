@@ -14,8 +14,8 @@ status: current
 governed_by_or_source: "rule-pack r3 verification sign-off; rule-pack.v1.global v3 GitHub Contribution Identity & Write Policy; rule-pack.v1.role.engineering v2; team-conventions.v1 v1.2; observed Raft CLI command surface 2026-07-10; BODY v1.4 §12 / §11.6; Coordinator + Reviewer worked examples"
 Source/Evidence:
   - "team-convention: configured-state, propagation, provider-execution, workload-evaluation, and failure-handling boundaries"
-  - "agent-manual-or-observed-cli: raft profile show --json and raft server info --full help/output observed 2026-07-10; raft server info --full reported daemon v0.72.4; evidence record: Raft #daily task #7"
-  - "version boundary: the local raft --version output was the non-semantic value 0.0.0, so this artifact makes no standalone CLI package-version claim; re-run the command-surface check after a Raft CLI or daemon change; unavailable or contradictory required fields are pending-source and cannot pass the gate"
+  - "agent-manual-or-observed-cli: raft profile show --json and raft server info --full help/output observed 2026-07-10; concrete runtime/daemon/CLI values, raw output, and task/thread locators stay in the per-run live evidence record rather than this versioned config"
+  - "version boundary: re-run the command-surface check after a Raft CLI or daemon change; unavailable or contradictory required fields are pending-source and cannot pass the gate"
 owner_confirmed: "@Dialyn 2026-07-10: v1.2 adds configured-state, propagation, provider-execution, and workload-evaluation evidence boundaries"
 ```
 
