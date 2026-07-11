@@ -1,22 +1,23 @@
-# Verification Hooks — Acceptance Criteria (v1.2)
+# Verification Hooks — Acceptance Criteria (v1.3)
 
 > The acceptance criteria for every `verify.*` id referenced by the rule packs, seeds, and the Presentation Contract. Used during agent dry-run / release-gate verification (Quality lane), not copied into agent MEMORY.
 > **Owner @Dialyn (Quality / Release Evidence)** — confirmed in the metadata below. The custom-rule + GitHub group (first 9) is verbatim from the team-signed-off rule-pack r3; the config dry-run group is from BODY v1.4 §12 + the Coordinator/Reviewer worked examples.
 
 ```yaml
 artifact_id: verification-hooks.v1
-version: v1.2
+version: v1.3
 owner: "@Dialyn"
 source_status:
   - team-convention
   - agent-manual-or-observed-cli
 status: current
-governed_by_or_source: "rule-pack r3 verification sign-off; rule-pack.v1.global v3 GitHub Contribution Identity & Write Policy; rule-pack.v1.role.engineering v2; team-conventions.v1 v1.2; observed Raft CLI command surface 2026-07-10; BODY v1.4 §12 / §11.6; Coordinator + Reviewer worked examples"
+governed_by_or_source: "rule-pack r3 verification sign-off; rule-pack.v1.global v3 GitHub Contribution Identity & Write Policy; rule-pack.v1.role.engineering v2; rule-pack.v1.role.experience v3; role-schema.v1.experience v3; team-conventions.v1 v1.2; observed Raft CLI command surface 2026-07-10; BODY v1.4 §12 / §11.6; Coordinator + Reviewer worked examples"
 Source/Evidence:
   - "team-convention: configured-state, propagation, provider-execution, workload-evaluation, and failure-handling boundaries"
+  - "team-convention: product-experience evidence boundaries from @lo-user review 2026-07-11; runnable-product versus representative-artifact scope, observed-only findings, and Engineering handoff"
   - "agent-manual-or-observed-cli: raft profile show --json and raft server info --full help/output observed 2026-07-10; concrete runtime/daemon/CLI values, raw output, and task/thread locators stay in the per-run live evidence record rather than this versioned config"
   - "version boundary: re-run the command-surface check after a Raft CLI or daemon change; unavailable or contradictory required fields are pending-source and cannot pass the gate"
-owner_confirmed: "@Dialyn 2026-07-10: v1.2 adds configured-state, propagation, provider-execution, and workload-evaluation evidence boundaries"
+owner_confirmed: "@Dialyn 2026-07-11: v1.3 adds the product-experience evidence boundary; v1.2 added configured-state, propagation, provider-execution, and workload-evaluation evidence boundaries"
 ```
 
 ## Custom-rule + GitHub group
@@ -37,6 +38,7 @@ owner_confirmed: "@Dialyn 2026-07-10: v1.2 adds configured-state, propagation, p
 - **verify.profile-runtime-membership**: Pass only when `raft profile show --json` matches the expected profile identity, description, runtime, and computer; joined channels are correct; and `raft server info --full` reports the configured runtime, model, reasoning, and daemon fields for the current agent process. Record only the fields needed for the check; do not copy host paths or other private runtime details into public artifacts. UI or schema acceptance and `Current Runtime` prove configured state only. Use runtime and adapter evidence to prove value propagation; use provider request or response evidence to prove execution; use representative workload evaluation for claims about quality, latency, cost, or delegation. If the required evidence layer is unavailable or contradictory, report `Source-Pending` or fail the gate instead of inferring support.
 - **verify.mention-routing** — a human / coordinator can @mention the agent to route a request; it acts, defers, or stays silent appropriately.
 - **verify.claim-conflict** — the agent claims only its lane's task types; it does not take over another agent's claimed work.
+- **verify.product-experience-evidence** — For an Experience review, pass only when the record identifies the intended user, task, success criteria, and actual evidence surface; inspects the relevant flows, states, and viewports supported by that surface; binds every finding to observed evidence and an observable acceptance target; and labels unavailable implementation fidelity, runtime interaction, or responsive behavior as Not Evaluated or Source-Pending when only screenshots or prototypes are available. Aesthetic preference without user-goal, accessibility, observed-behavior, or system-consistency evidence fails. Evidence: runnable build/version or representative artifact refs, tested flow/state/viewport list, finding-to-evidence mapping, acceptance target, and explicit evidence gaps.
 - **verify.handoff-review** — a final-handoff carries the §4 canonical schema (goal / current state / changes or evidence / verification / risks or open items / next owner or decision needed) so the receiver need not re-ask for basic context.
 - **verify.memory-update** — durable feedback / correction updates the agent's own MEMORY (the agent edits its own files; humans do not).
 - **verify.seed-sidecar-split** — the MEMORY seed holds only runtime content; governance metadata (versions, source map, audit fields) lives in the Artifact Index, not in MEMORY.
