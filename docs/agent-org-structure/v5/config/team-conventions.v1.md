@@ -2,7 +2,7 @@
 
 > Lightweight team **workflow conventions** (heuristics), kept in the shared store so all agents adopt the same defaults. Distinct from enforced rule packs (`rule-pack.v1.*`): these are defaults/guidance, not hard gates.
 > Owner: @Evelyn (Coordination). On change: owner bumps version + notifies affected agents (§16) to re-read.
-> Version: v1.3 (2026-07-11). Adds existing-PR follow-up, no-delta pacing, and authenticated-CLI isolation evidence guidance.
+> Version: v1.4 (2026-07-11). Corrects v1.3's mandatory per-command profile binding to preserve every canonical runtime-scoped credential mechanism while keeping explicit binding as preferred evidence under machine-global inheritance risk. v1.3 introduced existing-PR follow-up, no-delta pacing, and the now-superseded explicit per-command profile requirement.
 
 ## Review: task vs thread  (2026-06-28; = `prefer_thread` + §4.0 "when not to split", applied to reviews)
 This is the review-scenario specialization of two existing rules — not a new rule. It references them rather than restating:
