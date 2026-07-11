@@ -2,7 +2,7 @@
 
 > Lightweight team **workflow conventions** (heuristics), kept in the shared store so all agents adopt the same defaults. Distinct from enforced rule packs (`rule-pack.v1.*`): these are defaults/guidance, not hard gates.
 > Owner: @Evelyn (Coordination). On change: owner bumps version + notifies affected agents (§16) to re-read.
-> Version: v1.2 (2026-07-10). Adds the runtime configured-state and provider-effective evidence convention.
+> Version: v1.3 (2026-07-11). Adds existing-PR follow-up, no-delta pacing, and explicit authenticated-CLI profile binding.
 
 ## Review: task vs thread  (2026-06-28; = `prefer_thread` + §4.0 "when not to split", applied to reviews)
 This is the review-scenario specialization of two existing rules — not a new rule. It references them rather than restating:
@@ -23,6 +23,24 @@ This is the review-scenario specialization of two existing rules — not a new r
 - Any review with tool checks / evidence / go-no-go goes in a **thread** (not the main channel), whether or not it is a separate task.
 
 Origin: PR #15 review (Dialyn opened a sibling review task → @lo-user asked whether necessary → Evelyn/Anby/Dialyn converged → Astra DRY-tightened to reference `prefer_thread` + §4.0).
+
+## Operational execution discipline (2026-07-11)
+This section is an operational specialization of the existing global `build_on_prior`, `prefer_thread`, GitHub write gates, and `verify.thread-update`. It does not create a new permission model or replace the canonical global / Engineering policies.
+
+### Existing PR follow-up
+- Once a review finding is validated, the current implementation / PR owner updates the **existing PR** directly and reruns the fresh exact-head gates. Other lanes report findings through the existing review handoff and do not take over the implementation. Do not ask for another fix / commit / push / PR-body checkpoint.
+- Ask the human owner again only when product scope, risk, credentials or permissions, requirement interpretation, or merge or release authority changes materially, or when findings conflict materially.
+- Any new head invalidates the old head-bound review evidence; report the new exact head and rerun the required gates before asking for review.
+
+### Status and reminder pacing
+- Send progress only for a meaningful delta, blocker, decision, handoff, or final result. An unchanged state is not a new progress event.
+- When a reminder finds no state change, blocker, or deadline risk, snooze it silently. Do not post repeated no-drift reminders, recovery-index maintenance notices, or duplicate closure messages.
+- Fold private MEMORY / recovery-index maintenance into the next meaningful handoff unless the maintenance itself changes another person's routing, authority, or required action.
+
+### Authenticated CLI profile binding
+- Every state-changing GitHub CLI action — including PR create/edit/comment/close/reopen/merge, issue state/content changes, releases, and repo-setting changes — must explicitly bind the approved agent-scoped auth profile and precheck actor, repository, and permission immediately before the write. Ambient bare `gh` is not acceptable evidence of agent identity.
+- Prefer the same explicit profile for authenticated read-only commands so actor-dependent evidence is unambiguous. If the actor is unavailable, ambiguous, or mismatched, stop; mark historical attribution `Source-Pending` when it cannot be recovered.
+- Do not switch, log out, or modify a human's global CLI login as an agent workaround. Use the isolated agent profile and the existing GitHub Contribution Identity & Write Policy.
 
 ## Runtime configuration and effective capability (2026-07-10)
 - Treat `model`, `reasoning`, `runtime`, and `daemon` as live deployment metadata. They do not belong in role schemas or as fixed current values in MEMORY.
