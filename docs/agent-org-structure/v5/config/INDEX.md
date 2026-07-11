@@ -15,7 +15,7 @@ These files are the versioned canonical snapshot and publication record for the 
 
 ## Current Change Notes
 
-- `team-conventions.v1` v1.3 adds existing-PR follow-up, no-delta pacing, and explicit authenticated-CLI profile binding.
+- `team-conventions.v1` v1.3 adds existing-PR follow-up, no-delta pacing, and authenticated-CLI isolation evidence guidance.
 - `team-conventions.v1` v1.2 adds the runtime configured-state and provider-effective evidence convention.
 - `verification-hooks.v1` v1.2 adds configured-state, propagation, provider-execution, and workload-evaluation evidence boundaries.
 - `verification-hooks.v1` v1.3 adds the product-experience evidence boundary for runnable and representative-artifact reviews.
@@ -27,7 +27,7 @@ These files are the versioned canonical snapshot and publication record for the 
 
 | Artifact ID | File | Version | Owner | Status | Purpose |
 | --- | --- | --- | --- | --- | --- |
-| `team-conventions.v1` | [`team-conventions.v1.md`](./team-conventions.v1.md) | v1.3 | @Evelyn | current | Lightweight workflow heuristics for review task/thread defaults, existing-PR follow-up, no-delta pacing, explicit authenticated-CLI profile binding, batched repo sync cadence, and runtime configured-state/provider-effective evidence. |
+| `team-conventions.v1` | [`team-conventions.v1.md`](./team-conventions.v1.md) | v1.3 | @Evelyn | current | Lightweight workflow heuristics for review task/thread defaults, existing-PR follow-up, no-delta pacing, authenticated-CLI isolation evidence guidance, batched repo sync cadence, and runtime configured-state/provider-effective evidence. |
 
 ## Rule Packs
 
