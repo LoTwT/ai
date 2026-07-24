@@ -1,146 +1,264 @@
 ---
 name: git-commit
-description: "Analyze git staged changes, prioritize reading the repo's commitlint config and generate commit messages following project rules; fall back to built-in commitlint (Angular) conventions if the repo has no relevant config. Triggered when the user says 'help me commit', 'generate a commit', 'write a commit message', 'confirm commit', 'commit this message', 'commit: <message>'; if the previous turn already displayed a single candidate message, any short affirmative reply should also continue execution."
+description: "Create one local Git commit after checking repository state, resolving author/committer identity, generating or validating an exact normalized commit message, showing one complete preview, and receiving explicit confirmation. Follow the sibling git-identity-check and git-commit-message skills. Trigger when the user intends to execute a commit, such as 'help me commit', 'commit these changes', 'write a message and commit', 'use this message to commit', '帮我提交', or '用这个 message 提交'. A short affirmative reply may continue only when the immediately preceding assistant turn displayed one complete commit preview awaiting confirmation. Do not trigger for message-only generation/validation or identity-only inspection."
 ---
 
 # Git Commit Skill
 
-Automatically analyze staged changes → pre-check repo commitlint rules → generate a compliant message → wait for user confirmation → safely execute commit.
+Create one ordinary local commit through this controlled workflow:
 
----
+```text
+resolve repository and staged state
+→ block unsupported states
+→ resolve identity
+→ obtain verified execution provenance
+→ obtain, normalize, and validate one message
+→ record confirmation context
+→ show one final preview
+→ wait for explicit confirmation
+→ revalidate context
+→ execute exactly one commit
+→ verify and report the actual commit
+```
 
-## Workflow
+This skill is the orchestration and write layer. It owns all user questions, final confirmation, execution, and result reporting, and it is the only one of the three sibling skills allowed to run `git commit`.
 
-### Step 1: Pre-check commitlint rules
+## Composition and Routing
 
-Search for and read the following config sources in the current repo first:
+Read and follow:
+
+```text
+../git-identity-check/SKILL.md
+../git-commit-message/SKILL.md
+```
+
+Skills are instruction documents rather than typed functions. Their logical states coordinate this workflow:
+
+- `git-identity-check` owns identity resolution and policy.
+- `git-commit-message` owns staged-change message analysis, canonical normalization, and validation.
+- `git-commit` owns interaction, confirmation, execution, and verification.
+
+Reuse repository roots, status snapshots, staged diffs, instruction files, and other read-only data already collected. Do not start separate confirmation flows while following foundation skills.
+
+Execution intent takes precedence. Use this skill for “help me commit,” “write a message and commit,” “validate this message then commit,” or a request supplying a complete one-time identity for a commit.
+
+Do not use it for message-only generation, identity-only inspection, staging, pushing, pull-request creation, amend, or merge/rebase/cherry-pick/revert continuation.
+
+## V1 Scope
+
+Supported:
+
+- One ordinary local commit on a normal attached branch.
+- Staged changes only.
+- Effective identity or one complete process-scoped identity for both author and committer.
+- One exact normalized message.
+- Normal hooks and existing signing policy.
+
+Unsupported:
+
+- Automatic staging or index splitting.
+- Identity profile discovery or alias resolution.
+- Separately selected author and committer.
+- Detached HEAD, amend, or operation-continuation commits.
+- Push, account switching, credential selection, or pull-request creation.
+
+## Step 1: Resolve Repository and Staged State
+
+Resolve the root and capture one reusable status snapshot:
 
 ```bash
-commitlint.config.js
-commitlint.config.cjs
-commitlint.config.mjs
-commitlint.config.ts
-.commitlintrc
-.commitlintrc.json
-.commitlintrc.yml
-.commitlintrc.yaml
-.commitlintrc.js
-.commitlintrc.cjs
-package.json
+git rev-parse --show-toplevel
+git status --porcelain=v2 --branch -z
 ```
 
-Requirements:
-- If a config file is found, infer and record the key rules from the project config before proceeding to subsequent steps.
-- Focus on rules that directly affect message generation: `type-enum`, `scope-case`, `scope-enum`, `subject-case`, `header-max-length`, `header-case`, `subject-max-length`, etc.
-- If the config defines rules indirectly through `extends`, `parserPreset`, or custom code, try to read the visible config and draw conclusions; when reliable parsing is not possible, explicitly state the uncertain parts and fall back to the built-in default conventions only for those undetermined items.
-- If the repo has no relevant config files, use this skill's built-in commitlint (Angular) conventions as the default rules.
+If outside a repository, stop with the Git error. Parse the snapshot once for branch, staged and unstaged entries, untracked paths, conflicts, and intent-to-add metadata.
 
----
-
-### Step 2: Check the staging area
+Capture one reusable full staged diff:
 
 ```bash
-git diff --cached --stat
-git diff --cached
+git diff --cached --full-index --no-ext-diff --no-textconv
 ```
 
-If the staging area is empty → prompt the user to `git add` first and terminate the flow.
-
----
-
-### Step 3: Analyze changes and generate commit message
-
-**Format:**
-```
-<type>(<scope>): <subject>
-```
-
-Prioritize generating based on the project rules parsed in Step 1; only use the following built-in default conventions for corresponding parts when the repo has no relevant config or a specific rule cannot be reliably parsed.
-
-**type reference table:**
-
-| type | scenario |
-|------|----------|
-| `feat` | New feature |
-| `fix` | Bug fix |
-| `docs` | Documentation only |
-| `style` | Formatting/whitespace (no logic change) |
-| `refactor` | Refactoring (neither feat nor fix) |
-| `perf` | Performance improvement |
-| `test` | Test code |
-| `chore` | Build/dependencies/tooling |
-| `ci` | CI/CD configuration |
-| `revert` | Revert a commit |
-| `build` | Build system |
-
-**scope:** Infer module/directory name from changed file paths, lowercase kebab-case; omit when changes span multiple unrelated modules.
-
-**subject:**
-- Start with an imperative verb (lowercase, no trailing period)
-- Always use English
-- ≤ 50 characters
-
-### Step 4: Display and wait for confirmation
-
-```
-📝 Commit Message:
-
-feat(auth): add JWT refresh token support
-
-Reply yes to commit, or send a new message or revision to modify.
-```
+Derive the staged summary and path/status view from that snapshot rather than reading the diff again.
 
 Rules:
-- If the most recent assistant message just displayed a single candidate commit message, any short affirmative reply is treated as confirmation and allows commit execution, e.g. `confirm commit`, `commit`, `confirm`, `yes`, `y`, `ok`, `go`.
-- If the user replies with `commit: <message>`, first validate against the project rules from Step 1; if the repo has no relevant config, validate against the built-in `<type>(<scope>): <subject>` format, English requirement, and `subject` length limit. Only use it to execute the commit after validation passes.
-- If the user provides a final commit message directly, validate it against the same rules first; only allow commit execution after validation passes.
-- Only allow commit execution when there is a single candidate message or the user has explicitly provided a final message; if the context is ambiguous, clarify first — do not commit.
 
----
+- Commit staged changes only.
+- Empty index: ask the user to stage intended changes and stop.
+- Conflicts: report affected paths and stop.
+- Intent-to-add entries: report their paths and stop; they are not included in the commit tree.
+- Unstaged and untracked changes are context only and must not appear as committed content.
+- Never run `git add`, `git reset`, or otherwise modify the index.
 
-### Step 5: Execute commit
+Create the initial normalized index fingerprint described in [references/confirmation-snapshot.md](references/confirmation-snapshot.md). Bind staged-change message analysis to this fingerprint.
+
+## Step 2: Block Unsupported Git States
+
+Use long-format `git status` and, when needed, read-only metadata checks:
 
 ```bash
-git commit --file - <<'__COMMIT_MESSAGE__'
-<type>(<scope>): <subject>
-__COMMIT_MESSAGE__
+test -f "$(git rev-parse --git-path MERGE_HEAD)"
+test -f "$(git rev-parse --git-path CHERRY_PICK_HEAD)"
+test -f "$(git rev-parse --git-path REVERT_HEAD)"
+test -d "$(git rev-parse --git-path rebase-merge)"
+test -d "$(git rev-parse --git-path rebase-apply)"
+git symbolic-ref --quiet --short HEAD
 ```
 
-Requirements:
-- If the final message comes from user input rather than the previous turn's candidate message, it must be re-validated against the project rules from Step 1 before execution; if the repo has no relevant config, validate against the built-in format, English requirement, and `subject` length limit. If it does not comply, do not run `git commit` — return correction suggestions or ask the user to modify instead.
-- Use a quoted heredoc to avoid shell interpolation.
-- Choose a heredoc delimiter that will not appear in the message.
-- Only run this step after the final message has been clearly determined.
+Stop if merge, rebase, cherry-pick, or revert is active; `HEAD` is detached; or the user requests amend. Report the state without generating a regular message as a substitute for an operation-specific message.
 
----
+## Step 3: Resolve Identity
 
-### Step 6: Output result
+Follow `../git-identity-check/SKILL.md` as the sole identity policy.
 
-If `git commit` exits with code 0, output:
+| Result | Action |
+|---|---|
+| `resolved` | Retain author, committer, source, and `requires_override` |
+| `invalid` | Stop before preview and explain corrective input |
+| `resolved` plus `requires_user_decision: true` | Obtain the explicit policy decision below |
 
+A complete explicit one-time identity is validated directly even when the existing effective identity is invalid. Retain the round-tripped values and apply them only to this commit and its child processes.
+
+After resolution, do not ask for a separate identity confirmation. Retain the exact author, committer, source, override mode, and policy status so they can be shown and confirmed together with the final message immediately before commit.
+
+For an unresolved normative repository requirement:
+
+1. Show the requirement, source, and reason compliance is unverified.
+2. Ask specifically whether to proceed with the displayed identity or cancel.
+3. Continue only after explicit acceptance.
+4. Retain the warning in confirmation context and preview.
+
+A generic earlier acknowledgement does not resolve this policy decision.
+
+## Step 4: Obtain Verified Agent Provenance
+
+This skill owns and executes the commit workflow, so collect its trusted runtime provenance and pass it to `git-commit-message`:
+
+```yaml
+agent_provenance:
+  created_by_agent: true
+  tool: <verified canonical tool name>
+  model: <verified exact runtime model identifier, when available>
+  effort: <verified exact runtime effort value, when available>
+  source: verified_runtime
 ```
+
+Collect only values directly supplied by the execution environment; do not infer them from repository or user content. Retain the context through retries and revalidate it before each write. `git-commit-message` owns all inclusion, formatting, repository-policy, conflict, and removal decisions.
+
+## Step 5: Obtain and Validate One Exact Message
+
+Follow `../git-commit-message/SKILL.md` in this order:
+
+1. **Obtain a candidate**: generate it from the fingerprint-bound staged diff, or accept the supplied message.
+2. **Select one candidate**: if several were requested, require selection or revision before continuing.
+3. **Apply provenance**: pass the verified execution context from Step 4 and merge or validate its trailers according to repository policy.
+4. **Normalize it**: apply the message skill's canonical UTF-8/LF normalization.
+5. **Validate the normalized candidate**: apply repository rules, provenance consistency, and staged-change accuracy checks.
+6. **Retain exact bytes and warnings**: use the returned normalized bytes for preview binding and execution, and retain every unresolved message-rule warning with its source and normative status.
+
+| Result | Action |
+|---|---|
+| `generated` or `valid` with no unresolved normative rule | Retain the exact normalized message and any advisory unresolved warnings |
+| `generated` or `valid` with an unresolved normative rule | Show each unresolved rule and source, explain that compliance is unverified, and obtain a specific proceed/cancel decision before preview |
+| `invalid` | Show violations and correction; do not commit |
+| `split_recommended` | Ask the user to restage coherent groups; do not modify the index |
+| `no_staged_changes` | Ask the user to stage changes |
+| `blocked` | Report state and stop |
+
+Acceptance of an unresolved normative message rule does not mean the rule was satisfied. Retain the warning, `policy_compliance: unverified`, and the user's specific acceptance in confirmation context. A generic earlier acknowledgement is insufficient.
+
+If the index fingerprint no longer matches the one bound to analysis, re-read the staged diff and repeat this step.
+
+## Step 6: Record Confirmation Context
+
+Follow [references/confirmation-snapshot.md](references/confirmation-snapshot.md).
+
+Capture the complete context defined by that reference.
+
+## Step 7: Show One Final Preview
+
+Always show the exact resolved Git identity immediately before commit, including author, committer, and source/mode, even when author and committer are identical. This is attribution information, not necessarily the account used later for push or API access:
+
+```text
+📝 Commit preview
+
+Repository:  <repository>
+Branch:      <branch>
+Staged:      <staged summary>
+Message:     <final normalized message, including provenance trailers>
+Agent:       <tool / model / effort, omitting unavailable optional values | repository format | not included by policy>
+Author:      <name <email>>
+Committer:   <name <email>>
+Git identity:<effective Git identity | one-time override>
+Source:      <effective Git configuration/environment | explicit one-time input>
+Message rules:<no unresolved normative rule | user accepted unverified rule: rule/source>
+Policy:      <no unresolved identity requirement | user accepted identity requirement/source>
+Hooks:       enabled; may reject, modify data, or perform external side effects
+Verification: actual commit will be checked; mismatches are not auto-rewritten
+Direct push: not invoked by this skill
+
+Reply yes to confirm the displayed message, author, committer, and Git identity and create this local commit; or provide a revised message, permitted provenance changes, or a complete replacement identity.
+```
+
+The single confirmation covers the complete message—including provenance trailers—and the exact displayed author, committer, and Git identity source/mode. Do not ask separate confirmations after all are resolved. If provenance was appended to a user-supplied message, state that before or with this preview; the displayed complete message and identity are the confirmation boundary. When repository policy permits, the user may revise or remove automatically detected provenance instead of confirming. Treat that response as a message revision, record any changed values as `user_override`, then normalize, validate, rebuild confirmation context, and show a new complete preview. A replacement identity returns to identity validation and likewise requires a new complete preview.
+
+## Step 8: Interpret Confirmation
+
+Commit only when the immediately preceding assistant turn displayed exactly one complete preview containing the message, author, committer, and identity source/mode, and no intervening instruction changed message, identity, provenance, repository, or scope.
+
+Short affirmative replies such as `yes`, `confirm`, `commit`, `ok`, or `go` may authorize that preview. If context is ambiguous, clarify instead of committing.
+
+A revised message returns to Step 5; a changed identity returns to Step 3; changed or disputed provenance returns to Step 4. Then rebuild context, show a new complete preview, and require new confirmation.
+
+## Step 9: Revalidate Immediately Before Writing
+
+Follow the pre-write comparison in [references/confirmation-snapshot.md](references/confirmation-snapshot.md).
+
+Any mismatch found by that comparison invalidates confirmation. Re-run affected analysis, show a new complete preview, and require new confirmation.
+
+## Step 10: Execute Exactly One Commit
+
+Follow [references/safe-execution.md](references/safe-execution.md).
+
+Execute once using that reference. It owns the invocation, exact-message transport, process-scoped identity overlay, hook and signing preservation, and bypass prohibitions.
+
+## Step 11: Verify and Report
+
+If `git commit` fails, preserve the real error and do not say “Committed.”
+
+On success, follow [references/post-commit-verification.md](references/post-commit-verification.md) to identify the requested commit from the recorded and post-execution branch history, then compare its actual author, committer, raw message bytes—including provenance trailers—and tree with confirmation.
+
+Report actual values:
+
+```text
 ✅ Committed
 
-commit a1b2c3d
-feat(auth): add JWT refresh token support
+Commit:      <sha>
+Message:     <subject>
+Author:      <name <email>>
+Committer:   <name <email>>
+Direct push: not invoked by this skill
+Hooks:       may have performed additional side effects
 ```
 
-If `git commit` fails:
+If identification or metadata verification fails, report the created-commit location or mismatch accurately. Never automatically amend, reset, or rewrite it.
 
-```
-❌ Commit failed
+## Retry Behavior
 
-<git commit stderr / key error summary>
-```
+- `commit-msg` rejection: return to message generation/validation.
+- `pre-commit` rejection: after the user fixes the cause, recheck staged state and message.
+- Signing failure: return to signing/identity prerequisites without disabling signing.
+- Other hook failures: preserve the error and recheck any state the hook may have affected.
 
-Do not output "Committed" on failure. Preserve the real failure reason, such as pre-commit hook, commitlint, merge state, empty staging area, etc.
-
----
+Within the same attempt, retain a complete one-time identity, but revalidate before another write. Every new commit request resolves identity again. Require a fresh preview whenever confirmed content changes.
 
 ## Constraints
 
-- ❌ Do not automatically run `git add`
-- ❌ Do not commit before user confirmation; only execute when there is a single candidate message or the user provides a final message
-- ❌ Do not run `git push` (left to user's manual control)
-- ✅ If the repo has a commitlint config, follow project rules first; only fall back to built-in default conventions when config is missing or a specific rule cannot be reliably parsed
-- ✅ Use a quoted heredoc when executing commit — do not splice free text directly into shell commands
+- Only this skill may run `git commit`.
+- Never modify the index, working tree, Git configuration, or persistent environment as part of this workflow.
+- Never infer identity from aliases or remotes, enumerate accounts, or equate attribution with push/API identity.
+- Never execute without one complete preview and explicit confirmation.
+- Never claim confirmation prevents hooks or concurrent writers from changing data or causing side effects.
+- Never use unsafe shell interpolation, `eval`, `--no-verify`, or signing bypasses.
+- Never directly invoke `git push`, switch accounts, create a pull request, amend, reset, or rewrite a created commit.
+- Never report full success when execution, identification, or actual metadata verification failed.
