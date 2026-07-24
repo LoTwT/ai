@@ -4,6 +4,7 @@
 
 ### Development
 
+- [agent-config-setup](./skills/development/agent-config-setup/SKILL.md): 用于从内置模板初始化项目级 Agent 配置（`AGENTS.md`、`CLAUDE.md`、`docs/index.md`）；与现有文件冲突时需逐一确认后才覆盖。
 - [git-commit](./skills/development/git-commit/SKILL.md): 用于编排完整的本地 Git commit 流程，组合 message 与 identity 检查，统一确认后执行一次提交并验证实际结果；不自动暂存或 push。
 - [git-commit-message](./skills/development/git-commit-message/SKILL.md): 用于只读生成或校验 commit message；生成和变更准确性检查基于暂存区，纯规则校验可在暂存区为空时执行，不创建 commit。
 - [git-identity-check](./skills/development/git-identity-check/SKILL.md): 用于只读解析当前仓库实际生效的 Git author/committer identity，检查必要字段和仓库约束，不修改配置或执行提交。
