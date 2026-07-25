@@ -103,7 +103,7 @@ Choose type and scope from the purpose and behavior of the change, not mechanica
 
 ## Step 5: Apply Verified Agent Provenance
 
-When verified execution provenance is supplied, merge it into the candidate before normalization and validation. Follow [references/message-rules.md#agent-execution-provenance](references/message-rules.md#agent-execution-provenance) as the sole policy for inclusion, repository overrides, field values, existing-trailer conflicts, ordering, and user disclosure. Standalone message generation or validation supplies no execution provenance by default.
+When an ordered sequence of verified execution-provenance groups is supplied, merge it into the candidate before normalization and validation. Follow [references/message-rules.md#agent-execution-provenance](references/message-rules.md#agent-execution-provenance) as the sole policy for inclusion, repository overrides, group parsing and matching, field values, existing-trailer conflicts, ordering, and user disclosure. Standalone message generation or validation supplies no execution provenance by default.
 
 ## Step 6: Normalize the Candidate
 
@@ -151,14 +151,16 @@ For any validation result, retain these logical disclosures:
 ```yaml
 validation_scope: rules_only | rules_and_staged_changes
 agent_provenance:
-  included: true | false
-  tool: <verified canonical tool name, when included>
-  model: <verified exact model identifier, when included>
-  effort: <verified runtime effort, when included>
-  source: verified_runtime | user_override | not_supplied | repository_disabled
+  status: included | not_supplied | repository_disabled
+  groups: # only when status is included
+    - tool: <verified canonical tool name>
+      model: <verified exact model identifier, when included>
+      effort: <verified runtime effort, when included>
+      source: verified_runtime | user_override
+      overridden_fields: [tool | model | effort] # when applicable
 ```
 
-Omit unavailable optional provenance values rather than representing them as unknown. The provenance coordination data does not need to be printed as a separate block in standalone responses.
+Preserve `groups` in final message order and omit unavailable optional group fields rather than representing them as unknown. When a user override changes only part of a group, retain the verified runtime values separately in coordination context and identify the overridden fields. The provenance coordination data does not need to be printed as a separate block in standalone responses.
 
 ## Interaction Rules
 

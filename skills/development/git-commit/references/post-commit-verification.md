@@ -31,7 +31,7 @@ Read every bounded candidate object once:
 git cat-file commit <created-commit>
 ```
 
-Parse tree, author, committer, and the raw message after the first empty header separator. Compare raw message bytes—including the terminal LF and every agent provenance trailer—with the confirmed normalized bytes. This exact byte comparison verifies trailer presence, values, order, and spacing; do not silently repair or reinterpret a mismatch.
+Parse tree, author, committer, and the raw message after the first empty header separator. Compare the complete raw message bytes, including the terminal LF, with the confirmed normalized bytes. Exact byte equality verifies all content, ordering, and spacing; do not silently repair or reinterpret a mismatch.
 
 Verify:
 

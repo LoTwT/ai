@@ -51,8 +51,8 @@ Retain:
 - Recorded `HEAD`, or unborn state.
 - Index fingerprint.
 - Staged file summary.
-- Exact normalized message bytes, including any agent provenance trailers.
-- Verified agent execution-provenance context, the applied repository-policy result, and any explicit user-overridden message values.
+- Exact normalized message bytes, including every ordered agent provenance group and trailer.
+- The verified runtime provenance input, applied repository-policy result, and every explicit user-override delta identified by group position and affected field.
 - Exact author and committer name/email values selected for execution.
 - Identity source, effective versus one-time override mode, and whether an override is required.
 - Accepted unresolved identity-policy warning, if any.
@@ -69,8 +69,8 @@ Immediately before execution, recompute and compare:
 - Unsupported operation and detached-HEAD state.
 - Conflict and intent-to-add state.
 - Normalized stage-0 index fingerprint.
-- Exact message bytes, including provenance trailers and their order.
-- Verified agent execution context, provenance-policy result, and any retained `user_override` values.
+- Exact message bytes.
+- Verified runtime provenance input, provenance-policy result, and every retained `user_override` delta.
 - Identity resolved in the same mode execution will use.
 - Explicit-source and repository identity-policy status.
 - Unresolved message-rule warnings and any retained acceptance of unverified normative compliance.

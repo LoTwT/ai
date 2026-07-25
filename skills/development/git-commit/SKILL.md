@@ -132,18 +132,19 @@ A generic earlier acknowledgement does not resolve this policy decision.
 
 ## Step 4: Obtain Verified Agent Provenance
 
-This skill owns and executes the commit workflow, so collect its trusted runtime provenance and pass it to `git-commit-message`:
+This skill owns and executes the commit workflow, so collect the trusted runtime provenance for every verified agent that owns or executes that workflow and pass the ordered sequence to `git-commit-message`:
 
 ```yaml
 agent_provenance:
   created_by_agent: true
-  tool: <verified canonical tool name>
-  model: <verified exact runtime model identifier, when available>
-  effort: <verified exact runtime effort value, when available>
-  source: verified_runtime
+  groups:
+    - tool: <verified canonical tool name>
+      model: <verified exact runtime model identifier, when available>
+      effort: <verified exact runtime effort value, when available>
+      source: verified_runtime
 ```
 
-Collect only values directly supplied by the execution environment; do not infer them from repository or user content. Retain the context through retries and revalidate it before each write. `git-commit-message` owns all inclusion, formatting, repository-policy, conflict, and removal decisions.
+Include only runtime-provided provenance and pass it through unchanged. Do not infer agents or fields from repository or user content. Retain the context through retries and revalidate it before each write. `git-commit-message` owns agent eligibility, ordering, inclusion, formatting, repository-policy, matching, conflict, and removal decisions.
 
 ## Step 5: Obtain and Validate One Exact Message
 
@@ -151,10 +152,10 @@ Follow `../git-commit-message/SKILL.md` in this order:
 
 1. **Obtain a candidate**: generate it from the fingerprint-bound staged diff, or accept the supplied message.
 2. **Select one candidate**: if several were requested, require selection or revision before continuing.
-3. **Apply provenance**: pass the verified execution context from Step 4 and merge or validate its trailers according to repository policy.
+3. **Apply provenance**: pass every verified execution-provenance group from Step 4 in its original order and merge or validate the ordered sequence according to repository policy.
 4. **Normalize it**: apply the message skill's canonical UTF-8/LF normalization.
-5. **Validate the normalized candidate**: apply repository rules, provenance consistency, and staged-change accuracy checks.
-6. **Retain exact bytes and warnings**: use the returned normalized bytes for preview binding and execution, and retain every unresolved message-rule warning with its source and normative status.
+5. **Validate the normalized candidate**: apply repository rules, provenance consistency—including group count and order—and staged-change accuracy checks.
+6. **Retain exact bytes and warnings**: use the returned normalized bytes for preview binding and execution, and retain the final ordered provenance groups, every per-group or per-field override, and every unresolved message-rule warning with its source and normative status.
 
 | Result | Action |
 |---|---|
@@ -185,8 +186,11 @@ Always show the exact resolved Git identity immediately before commit, including
 Repository:  <repository>
 Branch:      <branch>
 Staged:      <staged summary>
-Message:     <final normalized message, including provenance trailers>
-Agent:       <tool / model / effort, omitting unavailable optional values | repository format | not included by policy>
+Message:     <final normalized message, including all ordered provenance trailers>
+Agents:
+  1. <tool / model / effort, omitting unavailable optional values | repository format>
+  2. <tool / model / effort, omitting unavailable optional values> [user override: <fields>, when applicable]
+  <not included by policy, when no groups are included>
 Author:      <name <email>>
 Committer:   <name <email>>
 Git identity:<effective Git identity | one-time override>
@@ -197,14 +201,14 @@ Hooks:       enabled; may reject, modify data, or perform external side effects
 Verification: actual commit will be checked; mismatches are not auto-rewritten
 Direct push: not invoked by this skill
 
-Reply yes to confirm the displayed message, author, committer, and Git identity and create this local commit; or provide a revised message, permitted provenance changes, or a complete replacement identity.
+Reply yes to confirm the displayed message, ordered agent provenance, author, committer, and Git identity and create this local commit; or provide a revised message, permitted provenance changes identified by agent number, or a complete replacement identity.
 ```
 
-The single confirmation covers the complete message—including provenance trailers—and the exact displayed author, committer, and Git identity source/mode. Do not ask separate confirmations after all are resolved. If provenance was appended to a user-supplied message, state that before or with this preview; the displayed complete message and identity are the confirmation boundary. When repository policy permits, the user may revise or remove automatically detected provenance instead of confirming. Treat that response as a message revision, record any changed values as `user_override`, then normalize, validate, rebuild confirmation context, and show a new complete preview. A replacement identity returns to identity validation and likewise requires a new complete preview.
+The single confirmation covers the complete message—including every ordered provenance group and trailer—and the exact displayed author, committer, and Git identity source/mode. Do not ask separate confirmations after all are resolved. If provenance groups were appended to or changed in a user-supplied message, state that before or with this preview; the displayed complete message, ordered agent list, and identity are the confirmation boundary. When repository policy permits, the user may revise, remove, add, or reorder provenance groups instead of confirming. Identify groups by their displayed one-based number and treat the response as a message revision; record changed groups and fields as `user_override`, then normalize, validate, rebuild confirmation context, and show a new complete preview. A replacement identity returns to identity validation and likewise requires a new complete preview.
 
 ## Step 8: Interpret Confirmation
 
-Commit only when the immediately preceding assistant turn displayed exactly one complete preview containing the message, author, committer, and identity source/mode, and no intervening instruction changed message, identity, provenance, repository, or scope.
+Commit only when the immediately preceding assistant turn displayed exactly one complete preview containing the message, ordered agent provenance groups, author, committer, and identity source/mode, and no intervening instruction changed message, identity, provenance group fields, group count or order, repository, or scope.
 
 Short affirmative replies such as `yes`, `confirm`, `commit`, `ok`, or `go` may authorize that preview. If context is ambiguous, clarify instead of committing.
 
@@ -226,7 +230,7 @@ Execute once using that reference. It owns the invocation, exact-message transpo
 
 If `git commit` fails, preserve the real error and do not say “Committed.”
 
-On success, follow [references/post-commit-verification.md](references/post-commit-verification.md) to identify the requested commit from the recorded and post-execution branch history, then compare its actual author, committer, raw message bytes—including provenance trailers—and tree with confirmation.
+On success, follow [references/post-commit-verification.md](references/post-commit-verification.md) to identify the requested commit from the recorded and post-execution branch history, then compare its actual author, committer, raw message bytes—including every ordered provenance group and trailer—and tree with confirmation.
 
 Report actual values:
 
