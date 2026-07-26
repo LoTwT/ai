@@ -181,7 +181,7 @@ Use this fallback only when the author and committer names are intentional expli
 
 2. Select the account:
 
-   - If the user already selected one discovered hostname/login pair, retain it.
+   - If the user already selected one discovered hostname/login pair, or an explicit user or project instruction designates one, retain it.
    - If exactly one eligible account exists, select it.
    - If several eligible accounts exist, ask the user to choose; do not silently prefer the active or global account.
    - If none exists or `gh` is unavailable, return `invalid` and request a complete email.
