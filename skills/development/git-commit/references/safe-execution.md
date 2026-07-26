@@ -17,17 +17,12 @@ env = {
 }
 
 if identity.requires_override:
-  argv = [
-    "git",
-    "-c", "user.name=" + identity.author.name,
-    "-c", "user.email=" + identity.author.email,
-    ...argv[1:]
-  ]
+  argv = ["git", ...identity.config_overrides, ...argv[1:]]
 
 run_process(argv, env, stdin_bytes = normalized_message_bytes)
 ```
 
-The four environment variables always pin the exact confirmed author and committer attribution for the child process, closing configuration/include races without persisting configuration. For a one-time identity, the `git -c` overlay additionally lets hooks reading `user.name` or `user.email` observe the same process-scoped identity. V1 one-time identities apply one pair to both author and committer.
+The four environment variables always pin the exact confirmed author and committer attribution for the child process, closing configuration/include races without persisting configuration. `identity.config_overrides` is a complete array of alternating `"-c"`, `"key=value"` arguments. A one-time identity sets it to `[-c, user.name=<name>, -c, user.email=<email>]`; a selected-account public-email fallback sets it to `[-c, user.email=<public-email>]` and preserves the intentional locally resolved names. If author and committer emails differ, do not claim one `user.email` represents both; the four environment variables remain authoritative and the overlay uses only the fallback email field defined by identity resolution.
 
 ## Shell-only Fallback
 
@@ -58,6 +53,40 @@ GIT_AUTHOR_EMAIL="$author_email" \
 GIT_COMMITTER_NAME="$committer_name" \
 GIT_COMMITTER_EMAIL="$committer_email" \
 git commit --cleanup=verbatim --file - <<'__COMMIT_MESSAGE__'
+<exact normalized message, ending with one LF>
+__COMMIT_MESSAGE__
+```
+
+Public-email fallback:
+
+```bash
+author_name=$(cat <<'__AUTHOR_NAME__'
+<exact confirmed local author name>
+__AUTHOR_NAME__
+) || exit
+author_email=$(cat <<'__AUTHOR_EMAIL__'
+<exact confirmed author email, including public fallback when used>
+__AUTHOR_EMAIL__
+) || exit
+committer_name=$(cat <<'__COMMITTER_NAME__'
+<exact confirmed local committer name>
+__COMMITTER_NAME__
+) || exit
+committer_email=$(cat <<'__COMMITTER_EMAIL__'
+<exact confirmed committer email, including public fallback when used>
+__COMMITTER_EMAIL__
+) || exit
+public_email=$(cat <<'__PUBLIC_EMAIL__'
+<exact selected account public email>
+__PUBLIC_EMAIL__
+) || exit
+
+GIT_AUTHOR_NAME="$author_name" \
+GIT_AUTHOR_EMAIL="$author_email" \
+GIT_COMMITTER_NAME="$committer_name" \
+GIT_COMMITTER_EMAIL="$committer_email" \
+git -c "user.email=$public_email" \
+    commit --cleanup=verbatim --file - <<'__COMMIT_MESSAGE__'
 <exact normalized message, ending with one LF>
 __COMMIT_MESSAGE__
 ```
@@ -94,6 +123,7 @@ Identity validation rejects embedded newlines. Command substitution removes each
 - Never use `eval`, unquoted heredocs, manual escaping of raw user text, or command-string re-evaluation.
 - Never add, remove, transcode, or implicitly clean confirmed message bytes.
 - Never use `--no-verify` or disable required signing.
-- Never persist identity overrides.
+- Complete any GitHub account selection and public-profile lookup before execution; never switch accounts during execution.
+- Never persist identity overrides or GitHub authentication changes.
 - Never directly invoke `git push`.
 - Preserve real hook, signing, commitlint, merge-state, and empty-index errors.
