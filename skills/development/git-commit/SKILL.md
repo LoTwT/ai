@@ -50,17 +50,17 @@ Supported:
 
 - One ordinary local commit on a normal attached branch.
 - Staged changes only.
-- Effective identity or one complete process-scoped identity for both author and committer.
+- Effective identity, a selected local GitHub account's public email as a missing-local-email fallback, or one complete process-scoped identity for both author and committer.
 - One exact normalized message.
 - Normal hooks and existing signing policy.
 
 Unsupported:
 
 - Automatic staging or index splitting.
-- Identity profile discovery or alias resolution.
+- Alias resolution or identity inference from remotes.
 - Separately selected author and committer.
 - Detached HEAD, amend, or operation-continuation commits.
-- Push, account switching, credential selection, or pull-request creation.
+- Push, account switching, credential mutation, or pull-request creation.
 
 ## Step 1: Resolve Repository and Staged State
 
@@ -113,13 +113,14 @@ Follow `../git-identity-check/SKILL.md` as the sole identity policy.
 
 | Result | Action |
 |---|---|
-| `resolved` | Retain author, committer, source, and `requires_override` |
+| `resolved` | Retain author, committer, source, `requires_override`, the complete ordered `config_overrides` array, and selected GitHub account/public-email source when present |
+| `selection_required` | Show only eligible hostname/login pairs, ask the user to select one, then resume identity resolution |
 | `invalid` | Stop before preview and explain corrective input |
 | `resolved` plus `requires_user_decision: true` | Obtain the explicit policy decision below |
 
 A complete explicit one-time identity is validated directly even when the existing effective identity is invalid. Retain the round-tripped values and apply them only to this commit and its child processes.
 
-After resolution, do not ask for a separate identity confirmation. Retain the exact author, committer, source, override mode, and policy status so they can be shown and confirmed together with the final message immediately before commit.
+After resolution, do not ask for a separate identity confirmation. Retain the exact author, committer, source, override mode, complete ordered `config_overrides` array, selected GitHub account and public-email source when used, and policy status so they can be shown and confirmed together with the final message immediately before commit.
 
 For an unresolved normative repository requirement:
 
@@ -193,8 +194,9 @@ Agents:
   <not included by policy, when no groups are included>
 Author:      <name <email>>
 Committer:   <name <email>>
-Git identity:<effective Git identity | one-time override>
-Source:      <effective Git configuration/environment | explicit one-time input>
+Git identity:<effective Git identity | selected GitHub public-email fallback | one-time override>
+Source:      <effective Git configuration/environment | public email from login@hostname | explicit one-time input>
+GitHub acct: <login@hostname and selection basis | not used>
 Message rules:<no unresolved normative rule | user accepted unverified rule: rule/source>
 Policy:      <no unresolved identity requirement | user accepted identity requirement/source>
 Hooks:       enabled; may reject, modify data, or perform external side effects
@@ -204,15 +206,15 @@ Direct push: not invoked by this skill
 Reply yes to confirm the displayed message, ordered agent provenance, author, committer, and Git identity and create this local commit; or provide a revised message, permitted provenance changes identified by agent number, or a complete replacement identity.
 ```
 
-The single confirmation covers the complete message—including every ordered provenance group and trailer—and the exact displayed author, committer, and Git identity source/mode. Do not ask separate confirmations after all are resolved. If provenance groups were appended to or changed in a user-supplied message, state that before or with this preview; the displayed complete message, ordered agent list, and identity are the confirmation boundary. When repository policy permits, the user may revise, remove, add, or reorder provenance groups instead of confirming. Identify groups by their displayed one-based number and treat the response as a message revision; record changed groups and fields as `user_override`, then normalize, validate, rebuild confirmation context, and show a new complete preview. A replacement identity returns to identity validation and likewise requires a new complete preview.
+The single confirmation covers the complete message—including every ordered provenance group and trailer—and the exact displayed author, committer, Git identity source/mode, and selected GitHub account/public-email source when used. Do not ask separate confirmations after all are resolved. If provenance groups were appended to or changed in a user-supplied message, state that before or with this preview; the displayed complete message, ordered agent list, and identity are the confirmation boundary. When repository policy permits, the user may revise, remove, add, or reorder provenance groups instead of confirming. Identify groups by their displayed one-based number and treat the response as a message revision; record changed groups and fields as `user_override`, then normalize, validate, rebuild confirmation context, and show a new complete preview. A replacement identity or GitHub-account selection returns to identity validation and likewise requires a new complete preview.
 
 ## Step 8: Interpret Confirmation
 
-Commit only when the immediately preceding assistant turn displayed exactly one complete preview containing the message, ordered agent provenance groups, author, committer, and identity source/mode, and no intervening instruction changed message, identity, provenance group fields, group count or order, repository, or scope.
+Commit only when the immediately preceding assistant turn displayed exactly one complete preview containing the message, ordered agent provenance groups, author, committer, identity source/mode, and selected GitHub account/public-email source when used, and no intervening instruction changed message, identity, selected account, provenance group fields, group count or order, repository, or scope.
 
 Short affirmative replies such as `yes`, `confirm`, `commit`, `ok`, or `go` may authorize that preview. If context is ambiguous, clarify instead of committing.
 
-A revised message returns to Step 5; a changed identity returns to Step 3; changed or disputed provenance returns to Step 4. Then rebuild context, show a new complete preview, and require new confirmation.
+A revised message returns to Step 5; a changed identity or selected GitHub account returns to Step 3; changed or disputed provenance returns to Step 4. Then rebuild context, show a new complete preview, and require new confirmation.
 
 ## Step 9: Revalidate Immediately Before Writing
 
@@ -260,7 +262,7 @@ Within the same attempt, retain a complete one-time identity, but revalidate bef
 
 - Only this skill may run `git commit`.
 - Never modify the index, working tree, Git configuration, or persistent environment as part of this workflow.
-- Never infer identity from aliases or remotes, enumerate accounts, or equate attribution with push/API identity.
+- Never infer identity from aliases or remotes, silently select among multiple local GitHub accounts, query private emails, invent a noreply email, or equate attribution with push/API identity.
 - Never execute without one complete preview and explicit confirmation.
 - Never claim confirmation prevents hooks or concurrent writers from changing data or causing side effects.
 - Never use unsafe shell interpolation, `eval`, `--no-verify`, or signing bypasses.

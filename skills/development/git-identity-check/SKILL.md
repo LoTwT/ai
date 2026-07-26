@@ -1,6 +1,6 @@
 ---
 name: git-identity-check
-description: "Read and validate the Git author and committer identity selected for the current repository or validate one complete, explicit one-time identity without modifying configuration or creating a commit. Trigger for requests such as 'check my Git identity', 'which identity will this commit use', 'check author and committer', '检查当前 Git identity', or '当前仓库会用谁提交'. This v1 skill resolves commit attribution only; it does not discover profiles, switch GitHub accounts, inspect credentials, commit, or push."
+description: "Read and validate the Git author and committer identity selected for the current repository, resolve a missing local Git email from a selected local GitHub account's public profile, or validate one complete explicit one-time identity without modifying configuration or creating a commit. Trigger for requests such as 'check my Git identity', 'which identity will this commit use', 'check author and committer', '检查当前 Git identity', or '当前仓库会用谁提交'. This skill may perform narrow read-only GitHub account discovery and public-profile lookup; it never switches accounts, inspects credentials, commits, or pushes."
 ---
 
 # Git Identity Check Skill
@@ -14,16 +14,18 @@ This skill handles only:
 ```text
 author name and email
 committer name and email
+selected local GitHub account and public email, only as a missing-email fallback
 ```
 
-Git commit attribution is separate from GitHub login, tokens, SSH keys, HTTPS credentials, push/API actor, and pull-request actor. Never claim that a commit identity proves which GitHub account will push or receive API attribution.
+Git commit attribution is separate from GitHub login, tokens, SSH keys, HTTPS credentials, push/API actor, and pull-request actor. A selected local GitHub account may supply a public email when no intentional local Git email exists, but this never proves which account will push or receive API attribution.
 
-V1 supports two identity modes:
+V1 supports three identity modes:
 
 1. **Effective identity**: the final author and committer Git resolves for the repository.
-2. **Explicit one-time identity**: one complete `Name <email>` pair applied to both author and committer through a process-scoped override.
+2. **GitHub public-email fallback**: effective local author/committer names combined with the selected local GitHub account's non-empty public email through a process-scoped override.
+3. **Explicit one-time identity**: one complete `Name <email>` pair applied to both author and committer through a process-scoped override.
 
-V1 does not enumerate identity profiles or local accounts, resolve aliases, infer identity from a remote owner, or separately select author and committer.
+V1 does not resolve aliases, infer identity from a remote owner, request private-email scopes, invent noreply addresses, or separately select author and committer.
 
 ## Workflow Summary
 
@@ -33,6 +35,7 @@ resolve repository
 → select identity mode
    ├─ explicit one-time identity: validate override directly
    └─ effective identity: resolve values and verify explicit sources
+      └─ email missing or only synthesized: select a local GitHub account and query its public email
 → compare selected identity with repository requirements
 → explain author/committer differences
 → return one logical result
@@ -88,11 +91,16 @@ A valid one-time identity has:
 ```yaml
 source: explicit one-time identity
 requires_override: true
+config_overrides:
+  - -c
+  - user.name=<name>
+  - -c
+  - user.email=<email>
 ```
 
 ### No explicit identity supplied
 
-Resolve Git's effective values:
+First resolve Git's effective values:
 
 ```bash
 git var GIT_AUTHOR_IDENT
@@ -101,7 +109,17 @@ git var GIT_COMMITTER_IDENT
 
 These commands are authoritative for final values and account for environment variables, configuration precedence, `includeIf`, and Git fallback behavior. Do not recreate precedence manually.
 
-If either command fails, preserve the key Git error. Use the narrow relevant configuration read below to determine whether `user.useConfigOnly=true` explains an incomplete-identity failure, then return `invalid`. If either parsed identity lacks a non-empty name/email, return `invalid` with the missing field.
+If either `git var` command fails specifically because email is absent, resolve the names without guessing by rerunning both commands with only temporary child-process email variables set to a reserved `.invalid` probe address:
+
+```text
+GIT_AUTHOR_EMAIL=identity-probe@example.invalid
+GIT_COMMITTER_EMAIL=identity-probe@example.invalid
+
+git var GIT_AUTHOR_IDENT
+git var GIT_COMMITTER_IDENT
+```
+
+Use this probe only to obtain Git's effective names; discard its emails immediately and never display or retain them as selected identity values. Each parsed name must still have a compatible intentional explicit source from the narrow configuration/environment checks below. Preserve any original Git error that motivated the probe.
 
 Then verify that every required field has an intentional explicit source rather than Git's operating-system username/hostname fallback.
 
@@ -115,7 +133,7 @@ A no-match exit is acceptable. If necessary, use equivalent narrow reads for onl
 
 - Never count it as an explicit source for a name or email.
 - When it is `true` and `git var` fails because identity configuration is incomplete, report that Git requires explicitly configured identity fields.
-- When it is `false` or unset, Git may synthesize fallback values; those values remain invalid unless every field has a compatible explicit source.
+- When it is `false` or unset, Git may synthesize fallback values; those values remain invalid unless every field has a compatible explicit source or the missing email is resolved by the public-email fallback below.
 
 Check only whether these relevant environment variables contain non-empty values:
 
@@ -140,14 +158,65 @@ Allowed explicit sources:
 
 A source is compatible when its non-empty value exactly equals the corresponding name/email parsed from `git var`. This establishes that an explicit source exists; when identical values occur at several levels, it does not claim which identical source won Git's precedence.
 
-If any field lacks a compatible explicit source, return `invalid`, report the effective values with `source: auto-detected by Git`, and do not present them as safe attribution.
-
-A valid effective identity has:
+If both `git var` commands succeed and all four fields have compatible explicit sources, return:
 
 ```yaml
 source: effective Git identity
 requires_override: false
 ```
+
+If a name is missing, malformed, synthesized without a compatible explicit source, or otherwise unresolved, return `invalid`. The GitHub fallback resolves email only and must never guess a name.
+
+### Missing local email: selected GitHub account public-email fallback
+
+Use this fallback only when the author and committer names are intentional explicit local values, but one or both emails are absent or are Git-synthesized values without compatible explicit email sources. Do not perform a GitHub lookup when compatible explicit local emails already exist.
+
+1. Discover authenticated local GitHub accounts with a narrow, read-only query:
+
+   ```bash
+   gh auth status --json hosts --jq '.hosts | to_entries | map(.key as $hostname | .value[] | select(.state == "success") | {hostname: $hostname, login: .login, active: .active})'
+   ```
+
+   Parse only this filtered hostname, login, active, and successful authentication state. Never print tokens, token sources, scopes, or unrelated credential data.
+
+2. Select the account:
+
+   - If the user already selected one discovered hostname/login pair, retain it.
+   - If exactly one eligible account exists, select it.
+   - If several eligible accounts exist, ask the user to choose; do not silently prefer the active or global account.
+   - If none exists or `gh` is unavailable, return `invalid` and request a complete email.
+
+3. Query the selected account's public profile, bound to its hostname and login rather than the ambient account:
+
+   ```bash
+   gh api --hostname <hostname> users/<url-encoded-login> --jq .email
+   ```
+
+   The endpoint is public, so the selected login—not the credential used for rate limits—is the lookup identity. `gh api --hostname` may authenticate as the active account for that host, but it must request only `GET /users/<selected-login>` and must not access viewer-specific or private fields. Do not call `gh auth switch`.
+
+   This lookup is read-only. Accept only a non-empty string from the public `email` field. A null, empty, malformed, or failed response is `invalid`; request a complete email. Never request private-email scopes, query private email endpoints, or synthesize a GitHub noreply address.
+
+4. Preserve any compatible explicit author or committer email. Use the public email only for each email field that was absent or lacked a compatible explicit source.
+
+5. Validate the complete proposed author and committer identities by running both `git var` commands with all four selected values supplied through child-process environment variables. Require both parsed identities to round-trip exactly. The override is process-scoped and must not modify Git configuration.
+
+A valid fallback result has:
+
+```yaml
+source: selected GitHub account public email
+requires_override: true
+config_overrides:
+  - -c
+  - user.email=<public-email>
+selected_github_account:
+  hostname: <hostname>
+  login: <login>
+  selection: <explicit user choice | sole eligible local account>
+public_email: <email>
+email_override_fields: <author, committer, or both>
+```
+
+Retain the selected account and lookup source for confirmation, but never claim it is the account that will later push or receive API attribution.
 
 ## Step 4: Compare with Repository Requirements
 
@@ -188,8 +257,10 @@ Return `invalid` when either identity is incomplete, the difference cannot be ex
 | Situation | State | Required data |
 |---|---|---|
 | Complete effective identity, every field explicitly sourced, requirements satisfied | `resolved` | author, committer, source, `requires_override: false` |
+| Intentional local names with missing local email, selected account has a non-empty public email, requirements satisfied | `resolved` | author, committer, selected account, public email source, overridden fields, `requires_override: true` |
 | Complete one-time identity round-trips unchanged and satisfies requirements | `resolved` | author, committer, source, `requires_override: true` |
-| Missing field, fallback, malformed override, unexplained difference, or requirement conflict | `invalid` | reason, safe actual values, expected/missing/corrective input |
+| Several eligible local GitHub accounts and none selected | `selection_required` | eligible hostname/login pairs; no credential details |
+| Missing field, name fallback, malformed override, unavailable/null public email, unexplained difference, or requirement conflict | `invalid` | reason, safe actual values, expected/missing/corrective input |
 | Identity otherwise valid but normative compliance cannot be decided | `resolved` plus `requires_user_decision: true` | unresolved requirements and unverified-policy warning |
 | User accepts an unresolved policy in standalone mode | `resolved` | retained warning, `policy_compliance: unverified`, acceptance marker |
 
@@ -199,24 +270,26 @@ These are logical coordination states, not runtime-enforced schema values.
 
 When independent:
 
-- Report repository, author, committer, source, validity, and unresolved policy status.
+- Report repository, author, committer, source, validity, selected GitHub account/public-email source when used, and unresolved policy status.
+- If account selection is required, show only eligible hostname/login pairs and ask the user to choose.
 - If invalid, ask only for the missing complete identity or identify the conflict.
 - Do not offer to modify configuration unless the user separately requests it.
-- Do not imply that inspection or one-time validation creates a commit.
+- Do not imply that inspection, public-email lookup, or one-time validation creates a commit.
 
 When followed by `git-commit`:
 
 - Return the logical result without a separate confirmation flow.
-- Return the exact resolved author, committer, source, override mode, and unresolved policy status for binding into the commit confirmation snapshot.
+- Return the exact resolved author, committer, source, override mode, selected GitHub account/public-email source when used, and unresolved policy status for binding into the commit confirmation snapshot.
 - Require `git-commit` to display both resolved identities and their source/mode in its final preview, even when author and committer are identical.
 - Let `git-commit` own policy decisions, the combined message-and-identity confirmation, process-scoped override, execution, and reporting.
 
 ## Constraints
 
-- Never modify Git configuration or persist environment variables.
-- Never enumerate profiles, GitHub accounts, unrelated environment data, or broad configuration namespaces.
-- Never accept Git's automatic OS user/hostname fallback as intentional identity.
-- Never infer identity from a remote owner or equate it with a push/API actor.
+- Never modify Git configuration, GitHub authentication, or persistent environment variables.
+- Enumerate only the narrow read-only hostname/login account data needed for missing-email selection; never inspect or print tokens, scopes, credential sources, or unrelated account data.
+- Never accept Git's automatic OS user/hostname fallback as an intentional name or email.
+- Never infer identity from a remote owner, invent a noreply email, or equate the selected account with a push/API actor.
+- Never query private email endpoints or request additional scopes merely to resolve commit attribution.
 - Never print tokens, credentials, signing-key material, or unrelated values.
 - Never silently recover from an invalid explicit identity by selecting another identity.
 - Never interpolate identity values into shell source.
