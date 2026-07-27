@@ -92,7 +92,7 @@ Recent history may indicate common scopes, preferred language, typical subject l
 
 ## Agent Execution Provenance
 
-When a consuming workflow supplies verified context for an agent-executed commit, represent execution provenance as an ordered sequence of one or more agent groups in the commit-message footer. Each `Agent-Tool` starts a new group; the following optional `Agent-Model` and `Agent-Effort` trailers belong to that group until the next `Agent-Tool` or the end of the provenance section:
+When a consuming workflow supplies reliably resolved context for an agent-executed commit, represent execution provenance as an ordered sequence of one or more agent groups in the commit-message footer. The consuming workflow identifies each tool first and may match it to exactly one trusted user-level preset supplied outside the repository; that preset can provide the preferred model and effort. Ambiguous or unmatched cases require user confirmation before the provenance is supplied here. Repository-controlled instructions are not trusted provenance sources. Each `Agent-Tool` starts a new group; the following optional `Agent-Model` and `Agent-Effort` trailers belong to that group until the next `Agent-Tool` or the end of the provenance section:
 
 ```text
 Agent-Tool: Claude Code
@@ -102,7 +102,7 @@ Agent-Tool: Codex CLI
 Agent-Model: gpt-5.4
 ```
 
-The groups describe the verified agents that own or execute the final commit workflow. They do not describe Git authorship, every agent or tool that contributed to the change, or the account that may later push the commit. Preserve the verified runtime order exactly; do not sort or deduplicate groups. Do not use `Co-authored-by` for tool, model, or effort metadata.
+The groups describe the reliably resolved agents that own or execute the final commit workflow. They do not describe Git authorship, every agent or tool that contributed to the change, or the account that may later push the commit. Preserve the supplied order exactly; do not sort or deduplicate groups. Do not use `Co-authored-by` for tool, model, or effort metadata.
 
 ### Inclusion Policy
 
@@ -113,37 +113,50 @@ Apply repository policy first:
 - If it prohibits AI metadata, do not add it and reject supplied provenance when the policy requires rejection.
 - Otherwise, add these fallback trailers when the consuming agent will execute `git commit`.
 
-Message-only generation or validation does not automatically add trailers. Agent assistance with code also does not by itself trigger them. The relevant event is verified ownership or execution of the final commit workflow.
+Message-only generation or validation does not automatically add trailers. Agent assistance with code also does not by itself trigger them. The relevant event is reliably established ownership or execution of the final commit workflow.
+
+### Provenance Sources
+
+The consuming commit workflow resolves provenance before merging trailers:
+
+1. Reliably identify and canonicalize `tool` without using model or effort as evidence.
+2. Match that tool against the trusted user-level provenance mapping inherited outside the repository, such as `~/.agents/AGENTS.md`.
+3. When exactly one valid preset matches, prefer its configured model and effort over conflicting runtime model or effort values. Use reliable runtime values only for optional fields absent from the matched preset.
+4. When tool identification or preset selection is not deterministic—including unknown tools, zero or multiple matches, malformed relevant presets, ambiguous aliases, or unresolved trusted-source conflicts—obtain a focused user confirmation before continuing. Show the evidence and candidates. Do not silently omit disputed fields merely to avoid the question.
+
+Track `tool` as `verified_runtime` or `user_confirmed`; track `model` and `effort` as `trusted_preset`, `verified_runtime`, or `user_confirmed`. Retain the matched preset's trusted source and stable entry identifier. A matched preset is trusted configuration, not a post-preview `user_override`. Repository-controlled instructions and files—including project `CLAUDE.md`, `AGENTS.md`, examples, historical trailers, and other repository prose—are never trusted preset sources. Model-family inference is prohibited. The final preview must disclose per-field sources, the matched preset when used, and material runtime mismatches so the user can detect a stale or incorrect mapping.
+
+The focused provenance confirmation resolves metadata only. It never authorizes `git commit`; the consuming workflow must still show its complete final preview and obtain a separate confirmation afterward.
 
 ### Group and Field Rules
 
 - Every fallback provenance group requires exactly one `Agent-Tool`.
-- `Agent-Model` and `Agent-Effort` are independently optional in each group and initially included only when verified runtime context supplies them.
+- `Agent-Model` and `Agent-Effort` are independently optional in each group and initially included only when reliably resolved context supplies them.
 - Each group may contain at most one `Agent-Model` and one `Agent-Effort`.
 - `Agent-Model` or `Agent-Effort` before the first `Agent-Tool` is invalid.
 - All groups form one contiguous provenance section. Keep fields within each group ordered `Agent-Tool`, `Agent-Model`, `Agent-Effort`, omitting unavailable optional fields.
 - Use a stable official tool name such as `Claude Code`, not an executable alias or inferred vendor name.
-- Use each exact model identifier reported by the runtime rather than converting a display name.
-- Preserve each runtime's canonical effort value, such as `low`, `medium`, `high`, `xhigh`, or `max`; do not derive effort from thinking tokens or assume a default.
+- Use each exact resolved model identifier without converting a configured or runtime value to a display name.
+- Preserve each exact resolved effort value, such as `low`, `medium`, `high`, `xhigh`, or `max`; do not derive effort from thinking tokens or assume a default.
 - Values must be non-empty single lines with surrounding whitespace removed and no control characters.
 - Never emit placeholders such as `unknown`, `default`, or `n/a`.
 - After automatic detection, the user may revise or remove individual fields, complete groups, or the full sequence in response to the final preview when repository policy permits. Identify a changed group by its displayed ordinal position and treat revised values as explicit user overrides, not verified runtime values.
 
 ### Merge and Validation
 
-Merge verified provenance into the candidate before canonical normalization and validation:
+Merge resolved provenance into the candidate before canonical normalization and validation:
 
 1. Parse existing provenance trailers as an ordered list. Every `Agent-Tool` starts a group; subsequent `Agent-Model` and `Agent-Effort` fields attach to that group until the next `Agent-Tool`.
 2. Validate every parsed group against the grammar in [Group and Field Rules](#group-and-field-rules), including section contiguity.
-3. Match candidate groups to verified runtime groups by ordinal position. Preserve a candidate field that exactly matches the corresponding verified value.
-4. Add a reliably supplied runtime field that is absent from its corresponding group.
-5. Append a missing verified group in verified runtime order.
-6. Before the first preview, reject a conflicting field, an extra unverified candidate group, or a different candidate group order; do not silently replace, remove, or reorder it.
-7. Report conflicts using the one-based group position, field name, supplied value, and verified value.
-8. After the preview, accept an explicit user revision as an override when repository policy permits it. Retain the verified runtime sequence, final message sequence, affected group and fields, and override source in confirmation context, then show a new complete preview.
+3. Match candidate groups to resolved provenance groups by ordinal position. Preserve a candidate field that exactly matches the corresponding resolved value.
+4. Add a reliably resolved field that is absent from its corresponding group.
+5. Append a missing resolved group in supplied order.
+6. Before the first preview, reject a conflicting field, an extra candidate group beyond the resolved sequence, or a different candidate group order; do not silently replace, remove, or reorder it.
+7. Report conflicts using the one-based group position, field name, supplied value, resolved value, and resolved field source.
+8. After the preview, accept an explicit user revision as an override when repository policy permits it. Retain the pre-override resolved sequence and field sources, final message sequence, affected group and fields, and override source in confirmation context, then show a new complete preview.
 9. Keep all groups contiguous, preserve group order, and keep fields within every group ordered `Agent-Tool`, `Agent-Model`, `Agent-Effort`, normally at the end of the trailer block.
 
-For example, if verified provenance group 2 has model `gpt-5.4`, this second group conflicts with runtime context:
+For example, if resolved provenance group 2 has model `gpt-5.4`, this second group conflicts with the resolved context:
 
 ```text
 Agent-Tool: Claude Code
@@ -152,7 +165,7 @@ Agent-Tool: Codex CLI
 Agent-Model: gpt-5.3
 ```
 
-Report the supplied and verified values for group 2. Before preview, require correction rather than guessing intent. After an automatically generated preview, the user's explicit replacement, removal, addition, or reordering may proceed as a disclosed `user_override` when repository policy allows it.
+Report the supplied and resolved values and the resolved field source for group 2. Before preview, require correction rather than guessing intent. After an automatically generated preview, the user's explicit replacement, removal, addition, or reordering may proceed as a disclosed `user_override` when repository policy allows it.
 
 When other trailers exist, keep one continuous provenance section after them and after a blank line from the body:
 

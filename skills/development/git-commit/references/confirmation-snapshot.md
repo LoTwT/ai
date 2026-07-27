@@ -50,9 +50,9 @@ Retain:
 - Whether the target branch ref existed before execution.
 - Recorded `HEAD`, or unborn state.
 - Index fingerprint.
-- Staged file summary.
+- Staged file summary and exact staged status/path list.
 - Exact normalized message bytes, including every ordered agent provenance group and trailer.
-- The verified runtime provenance input, applied repository-policy result, and every explicit user-override delta identified by group position and affected field.
+- The resolved provenance input with identified tools, matched trusted preset identities, runtime observations and mismatches, per-field sources, applied repository-policy result, and every user-confirmed or explicit user-override delta identified by group position and affected field.
 - Exact author and committer name/email values selected for execution.
 - Identity source, effective versus public-email fallback versus one-time override mode, whether an override is required, and the complete ordered `config_overrides` array used for execution.
 - Selected GitHub hostname/login, selection basis, returned public email, and overridden email fields when the fallback is used.
@@ -71,7 +71,7 @@ Immediately before execution, recompute and compare:
 - Conflict and intent-to-add state.
 - Normalized stage-0 index fingerprint.
 - Exact message bytes.
-- Verified runtime provenance input, provenance-policy result, and every retained `user_override` delta.
+- Resolved provenance input, identified tools, matched preset identities, runtime observations and mismatches, per-field sources, provenance-policy result, and every retained `user_confirmed` or `user_override` delta.
 - Identity resolved in the same mode execution will use, including an exact match of the complete ordered `config_overrides` array.
 - When the public-email fallback is used, the same selected GitHub hostname/login and the same exact confirmed public email; re-query the selected profile read-only before writing and invalidate confirmation on drift or lookup failure.
 - Explicit-source and repository identity-policy status.
