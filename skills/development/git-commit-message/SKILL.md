@@ -28,7 +28,7 @@ resolve repository and requested validation scope
 → discover applicable message rules
 → check staged-change coherence
 → obtain one candidate
-→ apply verified agent provenance when provided
+→ apply resolved agent provenance when provided
 → normalize the candidate
 → validate the normalized candidate
 → return one logical result
@@ -82,7 +82,7 @@ git log -10 --format=%s
 
 Do not execute repository package scripts, local binaries, commitlint commands, JavaScript/TypeScript configuration, plugins, parser presets, or extension modules merely to resolve rules. Mark executable or inherited rules that cannot be determined statically as unresolved, and never claim full validation while relevant rules remain unresolved.
 
-Read [references/message-rules.md](references/message-rules.md) only when repository rules do not fully determine message construction, commitlint configuration needs static interpretation, or verified agent provenance must be merged.
+Read [references/message-rules.md](references/message-rules.md) only when repository rules do not fully determine message construction, commitlint configuration needs static interpretation, or resolved agent provenance must be merged.
 
 ## Step 3: Check Staged-Change Coherence
 
@@ -101,9 +101,9 @@ Do not recommend splitting merely because several files or directories changed. 
 
 Choose type and scope from the purpose and behavior of the change, not mechanically from file paths. Include a body or footer only when required or useful.
 
-## Step 5: Apply Verified Agent Provenance
+## Step 5: Apply Resolved Agent Provenance
 
-When an ordered sequence of verified execution-provenance groups is supplied, merge it into the candidate before normalization and validation. Follow [references/message-rules.md#agent-execution-provenance](references/message-rules.md#agent-execution-provenance) as the sole policy for inclusion, repository overrides, group parsing and matching, field values, existing-trailer conflicts, ordering, and user disclosure. Standalone message generation or validation supplies no execution provenance by default.
+When an ordered sequence of reliably resolved execution-provenance groups is supplied, merge it into the candidate before normalization and validation. The consuming workflow identifies the tool first, may use it to select one trusted user-level preset for model and effort, and obtains user confirmation when resolution is ambiguous. Follow [references/message-rules.md#agent-execution-provenance](references/message-rules.md#agent-execution-provenance) as the sole policy for inclusion, repository overrides, group parsing and matching, field values and sources, existing-trailer conflicts, ordering, and user disclosure. Standalone message generation or validation supplies no execution provenance by default.
 
 ## Step 6: Normalize the Candidate
 
@@ -153,14 +153,18 @@ validation_scope: rules_only | rules_and_staged_changes
 agent_provenance:
   status: included | not_supplied | repository_disabled
   groups: # only when status is included
-    - tool: <verified canonical tool name>
-      model: <verified exact model identifier, when included>
-      effort: <verified runtime effort, when included>
-      source: verified_runtime | user_override
+    - tool: <canonical tool name>
+      model: <exact model identifier, when included>
+      effort: <exact effort value, when included>
+      field_sources:
+        tool: verified_runtime | user_confirmed | user_override
+        model: trusted_preset | verified_runtime | user_confirmed | user_override
+        effort: trusted_preset | verified_runtime | user_confirmed | user_override
+      preset_match: <trusted source and entry identifier, when used>
       overridden_fields: [tool | model | effort] # when applicable
 ```
 
-Preserve `groups` in final message order and omit unavailable optional group fields rather than representing them as unknown. When a user override changes only part of a group, retain the verified runtime values separately in coordination context and identify the overridden fields. The provenance coordination data does not need to be printed as a separate block in standalone responses.
+Preserve `groups` in final message order and retain each included field's source. Omit unavailable optional group fields rather than representing them as unknown. When a user override changes only part of a group, retain the pre-override resolved values separately in coordination context and identify the overridden fields. The provenance coordination data does not need to be printed as a separate block in standalone responses.
 
 ## Interaction Rules
 
