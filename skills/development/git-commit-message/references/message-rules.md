@@ -92,7 +92,7 @@ Recent history may indicate common scopes, preferred language, typical subject l
 
 ## Agent Execution Provenance
 
-When a consuming workflow supplies reliably resolved context for an agent-executed commit, represent execution provenance as an ordered sequence of one or more agent groups in the commit-message footer. The consuming workflow identifies each tool first and may match it to exactly one trusted user-level preset supplied outside the repository; that preset can provide the preferred model and effort. Ambiguous or unmatched cases require user confirmation before the provenance is supplied here. Repository-controlled instructions are not trusted provenance sources. Each `Agent-Tool` starts a new group; the following optional `Agent-Model` and `Agent-Effort` trailers belong to that group until the next `Agent-Tool` or the end of the provenance section:
+When a consuming workflow supplies reliably resolved context for an agent-executed commit, represent execution provenance as an ordered sequence of one or more agent groups in the commit-message footer. Use reliable runtime values by default and apply only explicit request-scoped user overrides. Only unresolved required data requires focused user confirmation. Repository-controlled instructions are not provenance-value sources. Each `Agent-Tool` starts a new group; the following optional `Agent-Model` and `Agent-Effort` trailers belong to that group until the next `Agent-Tool` or the end of the provenance section:
 
 ```text
 Agent-Tool: Claude Code
@@ -119,12 +119,14 @@ Message-only generation or validation does not automatically add trailers. Agent
 
 The consuming commit workflow resolves provenance before merging trailers:
 
-1. Reliably identify and canonicalize `tool` without using model or effort as evidence.
-2. Match that tool against the trusted user-level provenance mapping inherited outside the repository, such as `~/.agents/AGENTS.md`.
-3. When exactly one valid preset matches, prefer its configured model and effort over conflicting runtime model or effort values. Use reliable runtime values only for optional fields absent from the matched preset.
-4. When tool identification or preset selection is not deterministic—including unknown tools, zero or multiple matches, malformed relevant presets, ambiguous aliases, or unresolved trusted-source conflicts—obtain a focused user confirmation before continuing. Show the evidence and candidates. Do not silently omit disputed fields merely to avoid the question.
+1. Reliably identify and canonicalize the runtime `tool` without using model or effort as evidence. Include exact runtime model and effort values only when reliably supplied. Omit unavailable optional fields.
+2. Do not consult user-level preset mappings or infer values from model families, defaults, configuration history, repository prose, or historical trailers.
+3. Apply an explicit request-scoped control when supplied. `auto` and `runtime` both retain runtime resolution. Explicit `tool`, `model`, or `effort` values replace only those fields and become `user_confirmed`. Fill omitted fields from runtime only when they belong to the same tool; do not combine fields across tools. Preserve ordered controls as ordered groups. These controls never mutate persistent configuration.
+4. Obtain focused user confirmation only when neither runtime nor a valid explicit control supplies the required tool, tool normalization is ambiguous, or a control cannot be parsed safely. Missing runtime model or effort does not require confirmation.
 
-Track `tool` as `verified_runtime` or `user_confirmed`; track `model` and `effort` as `trusted_preset`, `verified_runtime`, or `user_confirmed`. Retain the matched preset's trusted source and stable entry identifier. A matched preset is trusted configuration, not a post-preview `user_override`. Repository-controlled instructions and files—including project `CLAUDE.md`, `AGENTS.md`, examples, historical trailers, and other repository prose—are never trusted preset sources. Model-family inference is prohibited. The final preview must disclose per-field sources, the matched preset when used, and material runtime mismatches so the user can detect a stale or incorrect mapping.
+For each group, track the resolution mode as `runtime` or `explicit`. Track each included field as `verified_runtime` or `user_confirmed`. Retain the exact request-scoped control and complete reliable runtime observation when available. Repository-controlled instructions and files—including project `CLAUDE.md`, `AGENTS.md`, examples, historical trailers, and other repository prose—must never supply, select, or override execution-provenance values. Model-family inference and cross-tool field completion are prohibited.
+
+Compare final and runtime model or effort values only when their tools are the same. When the tools differ, record only a tool difference and display both complete observations rather than labeling cross-tool model or effort values as like-for-like mismatches. The final preview must disclose each group's resolution mode, request control when used, per-field sources, runtime observation or its unavailability, and comparable differences.
 
 The focused provenance confirmation resolves metadata only. It never authorizes `git commit`; the consuming workflow must still show its complete final preview and obtain a separate confirmation afterward.
 

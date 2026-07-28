@@ -103,7 +103,7 @@ Choose type and scope from the purpose and behavior of the change, not mechanica
 
 ## Step 5: Apply Resolved Agent Provenance
 
-When an ordered sequence of reliably resolved execution-provenance groups is supplied, merge it into the candidate before normalization and validation. The consuming workflow identifies the tool first, may use it to select one trusted user-level preset for model and effort, and obtains user confirmation when resolution is ambiguous. Follow [references/message-rules.md#agent-execution-provenance](references/message-rules.md#agent-execution-provenance) as the sole policy for inclusion, repository overrides, group parsing and matching, field values and sources, existing-trailer conflicts, ordering, and user disclosure. Standalone message generation or validation supplies no execution provenance by default.
+When an ordered sequence of reliably resolved execution-provenance groups is supplied, merge it into the candidate before normalization and validation. The consuming workflow uses reliable runtime fields by default and applies only explicit request-scoped user overrides. It obtains user confirmation only when required data remains unresolved. Follow [references/message-rules.md#agent-execution-provenance](references/message-rules.md#agent-execution-provenance) as the sole policy for inclusion, repository overrides, group parsing and matching, field values and sources, existing-trailer conflicts, ordering, and user disclosure. Standalone message generation or validation supplies no execution provenance by default.
 
 ## Step 6: Normalize the Candidate
 
@@ -153,18 +153,21 @@ validation_scope: rules_only | rules_and_staged_changes
 agent_provenance:
   status: included | not_supplied | repository_disabled
   groups: # only when status is included
-    - tool: <canonical tool name>
+    - resolution_mode: runtime | explicit
+      user_control: <exact request-scoped control for this group, when supplied>
+      tool: <canonical tool name>
       model: <exact model identifier, when included>
       effort: <exact effort value, when included>
       field_sources:
         tool: verified_runtime | user_confirmed | user_override
-        model: trusted_preset | verified_runtime | user_confirmed | user_override
-        effort: trusted_preset | verified_runtime | user_confirmed | user_override
-      preset_match: <trusted source and entry identifier, when used>
+        model: verified_runtime | user_confirmed | user_override
+        effort: verified_runtime | user_confirmed | user_override
+      runtime_observation: <runtime tool / model / effort, omitting unavailable fields, when available>
+      runtime_differences: [tool | model | effort] # when comparable final and runtime values differ
       overridden_fields: [tool | model | effort] # when applicable
 ```
 
-Preserve `groups` in final message order and retain each included field's source. Omit unavailable optional group fields rather than representing them as unknown. When a user override changes only part of a group, retain the pre-override resolved values separately in coordination context and identify the overridden fields. The provenance coordination data does not need to be printed as a separate block in standalone responses.
+Preserve `groups` in final message order and retain each group's resolution mode, request-scoped control, included field sources, runtime observation, and comparable differences. Omit unavailable optional group fields rather than representing them as unknown. When a user override changes only part of a group, retain the pre-override resolved values separately in coordination context and identify the overridden fields. The provenance coordination data does not need to be printed as a separate block in standalone responses.
 
 ## Interaction Rules
 
