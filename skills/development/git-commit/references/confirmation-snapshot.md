@@ -54,7 +54,7 @@ Retain:
 - Exact normalized message bytes, including every ordered agent provenance group and trailer.
 - The resolved provenance input with each group's resolution mode, exact request-scoped control when supplied, final values, complete reliable runtime observation or its unavailability, comparable runtime differences, per-field sources, applied repository-policy result, and every user-confirmed or explicit user-override delta identified by group position and affected field.
 - Exact author and committer name/email values selected for execution.
-- Identity source, effective versus public-email fallback versus one-time override mode, whether an override is required, and the complete ordered `config_overrides` array used for execution.
+- Identity source, selection basis, exact applicable instruction source when used, effective versus public-email fallback versus one-time override mode, whether an override is required, and the complete ordered `config_overrides` array used for execution.
 - Selected GitHub hostname/login, selection basis, returned public email, and overridden email fields when the fallback is used.
 - Accepted unresolved identity-policy warning, if any.
 - Every unresolved message-rule warning, its source and normative status, and any specific user acceptance of unverified compliance.
@@ -72,9 +72,9 @@ Immediately before execution, recompute and compare:
 - Normalized stage-0 index fingerprint.
 - Exact message bytes.
 - Resolved provenance input, each group's resolution mode, exact request-scoped control when supplied, final values, complete reliable runtime observation or its unavailability, comparable runtime differences, per-field sources, provenance-policy result, and every retained `user_confirmed` or `user_override` delta.
-- Identity resolved in the same mode execution will use, including an exact match of the complete ordered `config_overrides` array.
+- Identity resolved from the same selection basis and applicable instruction source in the same mode execution will use, including an exact match of the complete ordered `config_overrides` array.
 - When the public-email fallback is used, the same selected GitHub hostname/login and the same exact confirmed public email; re-query the selected profile read-only before writing and invalidate confirmation on drift or lookup failure.
-- Explicit-source and repository identity-policy status.
+- Explicit-source and applicable identity-policy status.
 - Unresolved message-rule warnings and any retained acceptance of unverified normative compliance.
 - Signing prerequisites.
 

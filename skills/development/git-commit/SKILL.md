@@ -1,6 +1,6 @@
 ---
 name: git-commit
-description: "Create one local Git commit after checking repository state, resolving author/committer identity, generating or validating an exact normalized commit message, showing one complete preview, and receiving explicit confirmation. Follow the sibling git-identity-check and git-commit-message skills. Trigger when the user intends to execute a commit, such as 'help me commit', 'commit these changes', 'write a message and commit', 'use this message to commit', '帮我提交', or '用这个 message 提交'. A short affirmative reply may continue only when the immediately preceding assistant turn displayed one complete commit preview awaiting confirmation. Do not trigger for message-only generation/validation or identity-only inspection."
+description: "Create one local Git commit after checking repository state, resolving author/committer identity from the current request, applicable user/project instructions, or effective Git state, generating or validating an exact normalized commit message, showing one complete preview, and receiving explicit confirmation. Follow the sibling git-identity-check and git-commit-message skills. Trigger when the user intends to execute a commit, such as 'help me commit', 'commit these changes', 'write a message and commit', 'use this message to commit', '帮我提交', or '用这个 message 提交'. A short affirmative reply may continue only when the immediately preceding assistant turn displayed one complete commit preview awaiting confirmation. Do not trigger for message-only generation/validation or identity-only inspection."
 ---
 
 # Git Commit Skill
@@ -10,7 +10,7 @@ Create one ordinary local commit through this controlled workflow:
 ```text
 resolve repository and staged state
 → block unsupported states
-→ resolve identity
+→ resolve identity and retain its request/instruction basis
 → resolve execution provenance
 → obtain, normalize, and validate one message
 → record confirmation context
@@ -19,6 +19,7 @@ resolve repository and staged state
 → revalidate context
 → execute exactly one commit
 → verify and report the actual commit
+→ return a local-only handoff boundary for any separate remote workflow
 ```
 
 This skill is the orchestration and write layer. It owns all user questions, final confirmation, execution, and result reporting, and it is the only one of the three sibling skills allowed to run `git commit`.
@@ -40,6 +41,8 @@ Skills are instruction documents rather than typed functions. Their logical stat
 
 Reuse repository roots, status snapshots, staged diffs, instruction files, and other read-only data already collected. Do not start separate confirmation flows while following foundation skills.
 
+Treat the applicable instruction context as workflow input rather than copying account names into this skill. Identity directives flow through `git-identity-check`; commit-message and provenance rules flow through `git-commit-message`. Account-role, collaborator, push, PR, review, and merge rules remain inputs for a separate remote workflow and do not change this skill's local-only authority.
+
 Execution intent takes precedence. Use this skill for “help me commit,” “write a message and commit,” “validate this message then commit,” or a request supplying a complete one-time identity for a commit.
 
 Do not use it for message-only generation, identity-only inspection, staging, pushing, pull-request creation, amend, or merge/rebase/cherry-pick/revert continuation.
@@ -50,7 +53,7 @@ Supported:
 
 - One ordinary local commit on a normal attached branch.
 - Staged changes only.
-- Effective identity, a selected local GitHub account's public email as a missing-local-email fallback, or one complete process-scoped identity for both author and committer.
+- Effective identity, a selected local GitHub account's public email as a missing-local-email fallback, or one complete request- or instruction-designated process-scoped identity for both author and committer.
 - One exact normalized message.
 - Normal hooks and existing signing policy.
 
@@ -113,16 +116,16 @@ Follow `../git-identity-check/SKILL.md` as the sole identity policy.
 
 | Result | Action |
 |---|---|
-| `resolved` | Retain author, committer, source, `requires_override`, the complete ordered `config_overrides` array, and selected GitHub account/public-email source when present |
+| `resolved` | Retain author, committer, source, selection basis, applicable instruction source when used, `requires_override`, the complete ordered `config_overrides` array, and selected GitHub account/public-email source when present |
 | `selection_required` | Show only eligible hostname/login pairs, ask the user to select one, then resume identity resolution |
 | `invalid` | Stop before preview and explain corrective input |
 | `resolved` plus `requires_user_decision: true` | Obtain the explicit policy decision below |
 
-A complete explicit one-time identity is validated directly even when the existing effective identity is invalid. Retain the round-tripped values and apply them only to this commit and its child processes.
+A complete one-time identity selected by the current request or an applicable instruction is validated directly even when the existing effective identity is invalid. Retain the round-tripped values, selection basis, and exact instruction source when used, and apply the identity only to this commit and its child processes.
 
-After resolution, do not ask for a separate identity confirmation. Retain the exact author, committer, source, override mode, complete ordered `config_overrides` array, selected GitHub account and public-email source when used, and policy status so they can be shown and confirmed together with the final message immediately before commit.
+After resolution, do not ask for a separate identity confirmation. Retain the exact author, committer, source, selection basis, applicable instruction source when used, override mode, complete ordered `config_overrides` array, selected GitHub account and public-email source when used, and policy status so they can be shown and confirmed together with the final message immediately before commit.
 
-For an unresolved normative repository requirement:
+For an unresolved applicable identity requirement:
 
 1. Show the requirement, source, and reason compliance is unverified.
 2. Ask specifically whether to proceed with the displayed identity or cancel.
@@ -223,22 +226,24 @@ Agents:
 Author:      <name <email>>
 Committer:   <name <email>>
 Git identity:<effective Git identity | selected GitHub public-email fallback | one-time override>
-Source:      <effective Git configuration/environment | public email from login@hostname | explicit one-time input>
-GitHub acct: <login@hostname and selection basis | not used>
+Selected by: <current request | applicable instruction: exact source | effective Git configuration/environment | public-email fallback selection>
+Source:      <effective Git configuration/environment | public email from login@hostname | explicit one-time identity>
+GitHub acct: <login@hostname used only for public-email fallback, plus selection basis | not used>
 Message rules:<no unresolved normative rule | user accepted unverified rule: rule/source>
 Policy:      <no unresolved identity requirement | user accepted identity requirement/source>
 Hooks:       enabled; may reject, modify data, or perform external side effects
 Verification: actual commit will be checked; mismatches are not auto-rewritten
 Direct push: not invoked by this skill
+Remote next: follow the separately applicable GitHub workflow only if the enclosing request also asks for it
 
 Reply yes to confirm the displayed message, ordered agent provenance, author, committer, and Git identity and create this local commit; or provide a revised message, permitted provenance changes identified by agent number, or a complete replacement identity.
 ```
 
-The single confirmation covers the complete message—including every ordered provenance group and trailer—and the exact displayed author, committer, Git identity source/mode, and selected GitHub account/public-email source when used. Do not ask separate confirmations after all are resolved. If provenance groups were appended to or changed in a user-supplied message, state that before or with this preview; the displayed complete message, ordered agent list, and identity are the confirmation boundary. When repository policy permits, the user may revise, remove, add, or reorder provenance groups instead of confirming. Identify groups by their displayed one-based number and treat the response as a message revision; record changed groups and fields as `user_override`, then normalize, validate, rebuild confirmation context, and show a new complete preview. A replacement identity or GitHub-account selection returns to identity validation and likewise requires a new complete preview.
+The single confirmation covers the complete message—including every ordered provenance group and trailer—and the exact displayed author, committer, Git identity source/mode, selection basis, applicable instruction source, and selected GitHub account/public-email source when used. Do not ask separate confirmations after all are resolved. If provenance groups were appended to or changed in a user-supplied message, state that before or with this preview; the displayed complete message, ordered agent list, and identity are the confirmation boundary. When repository policy permits, the user may revise, remove, add, or reorder provenance groups instead of confirming. Identify groups by their displayed one-based number and treat the response as a message revision; record changed groups and fields as `user_override`, then normalize, validate, rebuild confirmation context, and show a new complete preview. A replacement identity or GitHub-account selection returns to identity validation and likewise requires a new complete preview.
 
 ## Step 8: Interpret Confirmation
 
-Commit only when the immediately preceding assistant turn displayed exactly one complete preview containing the message, ordered agent provenance groups and their sources, author, committer, identity source/mode, and selected GitHub account/public-email source when used, and no intervening instruction changed message, identity, selected account, provenance group fields or sources, group count or order, repository, or scope. The user's initial request to commit never satisfies this confirmation requirement; confirmation must be a new reply to that preview.
+Commit only when the immediately preceding assistant turn displayed exactly one complete preview containing the message, ordered agent provenance groups and their sources, author, committer, identity source/mode, selection basis, applicable instruction source when used, and selected GitHub account/public-email source when used, and no intervening instruction changed message, identity, identity directive, selected account, provenance group fields or sources, group count or order, repository, or scope. The user's initial request to commit never satisfies this confirmation requirement; confirmation must be a new reply to that preview.
 
 Short affirmative replies such as `yes`, `confirm`, `commit`, `ok`, or `go` may authorize that preview. If context is ambiguous, clarify instead of committing.
 
@@ -271,11 +276,22 @@ Commit:      <sha>
 Message:     <subject>
 Author:      <name <email>>
 Committer:   <name <email>>
+Identity:    <mode; selected by current request, exact instruction source, effective Git, or public-email fallback>
 Direct push: not invoked by this skill
+Remote next: <not requested | hand off to the separately applicable GitHub workflow>
 Hooks:       may have performed additional side effects
 ```
 
 If identification or metadata verification fails, report the created-commit location or mismatch accurately. Never automatically amend, reset, or rewrite it.
+
+## Remote Workflow Handoff
+
+This skill stops after the verified local commit.
+
+- For a commit-only request, return control without inspecting remotes, collaborator access, branch protection, or GitHub authentication.
+- When an enclosing request also asks to push or open a PR, return the verified repository, branch, commit, actual author/committer, identity selection basis, and applicable remote-workflow instruction source to the caller. The caller must then perform the fresh remote/account/permission preflight required by those instructions.
+- Never infer the push or PR actor from commit attribution, a remote owner, persistent Git configuration, or a public-email fallback account.
+- Local commit confirmation does not authorize a push, collaborator invitation, invitation acceptance, PR creation, review, approval, or merge.
 
 ## Retry Behavior
 
@@ -294,5 +310,5 @@ Within the same attempt, retain a complete one-time identity, but revalidate bef
 - Never execute without one complete preview and a new explicit confirmation reply made after that preview; the initiating commit request and earlier policy decisions never count.
 - Never claim confirmation prevents hooks or concurrent writers from changing data or causing side effects.
 - Never use unsafe shell interpolation, `eval`, `--no-verify`, or signing bypasses.
-- Never directly invoke `git push`, switch accounts, create a pull request, amend, reset, or rewrite a created commit.
+- Never directly invoke `git push`, switch accounts, inspect or change collaborator access, create a pull request, review, approve, merge, amend, reset, or rewrite a created commit.
 - Never report full success when execution, identification, or actual metadata verification failed.
