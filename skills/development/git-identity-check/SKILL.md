@@ -1,6 +1,6 @@
 ---
 name: git-identity-check
-description: "Read and validate the Git author and committer identity selected for the current repository, resolve a missing local Git email from a selected local GitHub account's public profile, or validate one complete explicit one-time identity without modifying configuration or creating a commit. Trigger for requests such as 'check my Git identity', 'which identity will this commit use', 'check author and committer', '检查当前 Git identity', or '当前仓库会用谁提交'. This skill may perform narrow read-only GitHub account discovery and public-profile lookup; it never switches accounts, inspects credentials, commits, or pushes."
+description: "Read and validate the Git author and committer identity selected from the current request, applicable user/project instructions, or effective Git state; resolve a missing local Git email from a selected local GitHub account's public profile; or validate one complete process-scoped identity without modifying configuration or creating a commit. Trigger for requests such as 'check my Git identity', 'which identity will this commit use', 'check author and committer', '检查当前 Git identity', or '当前仓库会用谁提交'. This skill may perform narrow read-only GitHub account discovery and public-profile lookup; it never switches accounts, inspects credentials, commits, pushes, or selects a remote actor."
 ---
 
 # Git Identity Check Skill
@@ -14,6 +14,7 @@ This skill handles only:
 ```text
 author name and email
 committer name and email
+identity selection basis and its applicable instruction source
 selected local GitHub account and public email, only as a missing-email fallback
 ```
 
@@ -23,7 +24,7 @@ V1 supports three identity modes:
 
 1. **Effective identity**: the final author and committer Git resolves for the repository.
 2. **GitHub public-email fallback**: effective local author/committer names combined with the selected local GitHub account's non-empty public email through a process-scoped override.
-3. **Explicit one-time identity**: one complete `Name <email>` pair applied to both author and committer through a process-scoped override.
+3. **Explicit one-time identity**: one complete `Name <email>` pair designated by the current request or an applicable instruction and applied to both author and committer through a process-scoped override.
 
 V1 does not resolve aliases, infer identity from a remote owner, request private-email scopes, invent noreply addresses, or separately select author and committer.
 
@@ -31,12 +32,12 @@ V1 does not resolve aliases, infer identity from a remote owner, request private
 
 ```text
 resolve repository
-→ discover repository identity requirements
-→ select identity mode
-   ├─ explicit one-time identity: validate override directly
+→ discover applicable identity directives and requirements
+→ select identity mode and basis
+   ├─ request- or instruction-designated one-time identity: validate override directly
    └─ effective identity: resolve values and verify explicit sources
       └─ email missing or only synthesized: select a local GitHub account and query its public email
-→ compare selected identity with repository requirements
+→ compare selected identity with applicable identity requirements
 → explain author/committer differences
 → return one logical result
 ```
@@ -49,17 +50,29 @@ git rev-parse --show-toplevel
 
 If the current directory is not in a Git repository, return `invalid` with the relevant Git error. Record the root and use it for all later checks; do not inspect an unrelated repository as a substitute.
 
-## Step 2: Discover Repository Identity Requirements
+## Step 2: Discover Applicable Identity Directives and Requirements
 
-Read only likely sources such as `CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING*`, `README.md`, and repository-specific development or agent identity documentation.
+Use the applicable instruction context already supplied for the task, including user-level/global and project-level instructions. Then read only likely repository sources such as `CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING*`, `README.md`, and repository-specific development or agent identity documentation. Do not scan unrelated home-directory files or assume the repository-local `AGENTS.md` is the only applicable instruction source.
 
-Record normative author/committer requirements and their sources. General examples are not requirements unless the document makes them normative for this repository and operation. Classification occurs after an identity has been selected.
+Classify and retain every normative statement with its exact source:
 
-## Step 3: Select Identity Mode
+- An **identity directive** designates one complete author/committer identity for the current operation or agent role.
+- An **identity requirement** constrains the selected identity without necessarily selecting one.
+- A GitHub account-role, push, PR, review, or merge statement is not a Git identity directive unless it also gives a complete `Name <email>` pair and explicitly applies it to commit attribution.
 
-### Explicit one-time identity supplied
+Apply normal instruction authority and scope. Subject to higher-priority instructions, a complete identity explicitly supplied in the current request takes precedence over defaults. Among applicable instruction directives, use the highest-precedence, most-specific directive. Equal-precedence directives that select different identities are `invalid`. A broader default superseded by a more-specific directive is not a conflict.
 
-If the user supplies a one-time identity, validate it directly. Do **not** require the existing effective identity to be valid first.
+General examples are not directives or requirements unless the source makes them normative for this operation. Retain superseded defaults for explanation, but compare the selected identity only with requirements that remain applicable.
+
+## Step 3: Select Identity Mode and Basis
+
+Use this order:
+
+1. A complete one-time identity explicitly supplied in the current request.
+2. A complete identity selected by the highest-precedence applicable instruction directive.
+3. The effective Git identity.
+
+For the first two cases, validate the selected one-time identity directly. Do **not** require the existing effective identity to be valid or read it merely to choose between identities. This allows an applicable Agent identity directive to coexist with a different persistent human Git configuration.
 
 A valid v1 input contains:
 
@@ -68,7 +81,7 @@ A valid v1 input contains:
 - No NUL or newline characters.
 - No unresolved alias or profile lookup.
 
-A login, alias, or name without an email is incomplete. Return `invalid` and request the missing complete name/email; never fall back to the effective identity after an explicit override fails.
+A login, alias, or name without an email is incomplete. Return `invalid` and request the missing complete name/email; never fall back to the effective identity after a selected request- or instruction-designated override fails.
 
 Validate the proposed values through Git by running both commands with all four identity variables supplied to the child processes:
 
@@ -90,6 +103,8 @@ A valid one-time identity has:
 
 ```yaml
 source: explicit one-time identity
+selection_basis: current request | applicable instruction
+instruction_source: <exact source when selected by an instruction>
 requires_override: true
 config_overrides:
   - -c
@@ -98,7 +113,9 @@ config_overrides:
   - user.email=<email>
 ```
 
-### No explicit identity supplied
+Retain the exact instruction source when `selection_basis` is `applicable instruction`. Do not copy account names or identity values from this skill itself; the values must come from the current request or actually applicable instructions.
+
+### No explicit one-time identity selected
 
 First resolve Git's effective values:
 
@@ -162,6 +179,7 @@ If both `git var` commands succeed and all four fields have compatible explicit 
 
 ```yaml
 source: effective Git identity
+selection_basis: effective Git state
 requires_override: false
 ```
 
@@ -181,7 +199,7 @@ Use this fallback only when the author and committer names are intentional expli
 
 2. Select the account:
 
-   - If the user already selected one discovered hostname/login pair, or an explicit user or project instruction designates one, retain it.
+   - If the current request already selected one discovered hostname/login pair, or an applicable instruction designates one for this fallback, retain it.
    - If exactly one eligible account exists, select it.
    - If several eligible accounts exist, ask the user to choose; do not silently prefer the active or global account.
    - If none exists or `gh` is unavailable, return `invalid` and request a complete email.
@@ -204,6 +222,7 @@ A valid fallback result has:
 
 ```yaml
 source: selected GitHub account public email
+selection_basis: effective Git state with public-email fallback
 requires_override: true
 config_overrides:
   - -c
@@ -211,14 +230,14 @@ config_overrides:
 selected_github_account:
   hostname: <hostname>
   login: <login>
-  selection: <explicit user choice | sole eligible local account>
+  selection: <current request | applicable instruction | sole eligible local account>
 public_email: <email>
 email_override_fields: <author, committer, or both>
 ```
 
 Retain the selected account and lookup source for confirmation, but never claim it is the account that will later push or receive API attribution.
 
-## Step 4: Compare with Repository Requirements
+## Step 4: Compare with Applicable Identity Requirements
 
 For a complete exact requirement:
 
@@ -226,9 +245,9 @@ For a complete exact requirement:
 - Mismatch: return `invalid` with expected and actual values.
 - Conflicting exact requirements: return `invalid` with each requirement and source; never choose one.
 
-For a normative requirement v1 cannot evaluate exactly, such as an email-domain pattern or conditional role rule:
+For an applicable normative requirement v1 cannot evaluate exactly, such as an email-domain pattern or conditional role rule:
 
-- Record it under `unresolved_repository_requirements`.
+- Record it under `unresolved_identity_requirements` with its exact source.
 - If the selected identity clearly violates it, return `invalid`.
 - Otherwise retain the identity as `resolved`, add `requires_user_decision: true`, and state that policy compliance is unverified.
 
@@ -248,7 +267,7 @@ When followed by `git-commit`, do not ask separately. Return `requires_user_deci
 
 Git permits author and committer to differ. Always display both.
 
-Return `resolved` when both are complete, every field is explicitly sourced, the difference is explainable from the narrow relevant sources, and no repository requirement forbids it.
+Return `resolved` when both are complete, every field is explicitly sourced, the difference is explainable from the narrow relevant sources, and no applicable identity requirement forbids it.
 
 Return `invalid` when either identity is incomplete, the difference cannot be explained, or the values violate a requirement. Never rewrite them to match automatically.
 
@@ -256,9 +275,9 @@ Return `invalid` when either identity is incomplete, the difference cannot be ex
 
 | Situation | State | Required data |
 |---|---|---|
-| Complete effective identity, every field explicitly sourced, requirements satisfied | `resolved` | author, committer, source, `requires_override: false` |
-| Intentional local names with missing local email, selected account has a non-empty public email, requirements satisfied | `resolved` | author, committer, selected account, public email source, overridden fields, `requires_override: true` |
-| Complete one-time identity round-trips unchanged and satisfies requirements | `resolved` | author, committer, source, `requires_override: true` |
+| Complete effective identity, every field explicitly sourced, requirements satisfied | `resolved` | author, committer, source, selection basis, `requires_override: false` |
+| Intentional local names with missing local email, selected account has a non-empty public email, requirements satisfied | `resolved` | author, committer, source, identity selection basis, selected account and its selection basis, public email source, overridden fields, `requires_override: true` |
+| Complete request- or instruction-designated one-time identity round-trips unchanged and satisfies requirements | `resolved` | author, committer, source, selection basis, instruction source when used, `requires_override: true` |
 | Several eligible local GitHub accounts and none selected | `selection_required` | eligible hostname/login pairs; no credential details |
 | Missing field, name fallback, malformed override, unavailable/null public email, unexplained difference, or requirement conflict | `invalid` | reason, safe actual values, expected/missing/corrective input |
 | Identity otherwise valid but normative compliance cannot be decided | `resolved` plus `requires_user_decision: true` | unresolved requirements and unverified-policy warning |
@@ -270,7 +289,7 @@ These are logical coordination states, not runtime-enforced schema values.
 
 When independent:
 
-- Report repository, author, committer, source, validity, selected GitHub account/public-email source when used, and unresolved policy status.
+- Report repository, author, committer, mode, selection basis, applicable instruction source when used, validity, selected GitHub account/public-email source when used, and unresolved policy status.
 - If account selection is required, show only eligible hostname/login pairs and ask the user to choose.
 - If invalid, ask only for the missing complete identity or identify the conflict.
 - Do not offer to modify configuration unless the user separately requests it.
@@ -279,7 +298,7 @@ When independent:
 When followed by `git-commit`:
 
 - Return the logical result without a separate confirmation flow.
-- Return the exact resolved author, committer, source, override mode, selected GitHub account/public-email source when used, and unresolved policy status for binding into the commit confirmation snapshot.
+- Return the exact resolved author, committer, source, selection basis, applicable instruction source when used, override mode, selected GitHub account/public-email source when used, and unresolved policy status for binding into the commit confirmation snapshot.
 - Require `git-commit` to display both resolved identities and their source/mode in its final preview, even when author and committer are identical.
 - Let `git-commit` own policy decisions, the combined message-and-identity confirmation, process-scoped override, execution, and reporting.
 
@@ -288,7 +307,8 @@ When followed by `git-commit`:
 - Never modify Git configuration, GitHub authentication, or persistent environment variables.
 - Enumerate only the narrow read-only hostname/login account data needed for missing-email selection; never inspect or print tokens, scopes, credential sources, or unrelated account data.
 - Never accept Git's automatic OS user/hostname fallback as an intentional name or email.
-- Never infer identity from a remote owner, invent a noreply email, or equate the selected account with a push/API actor.
+- Never infer identity from a remote owner, a GitHub login, or an account-role table that does not explicitly designate a complete commit identity; never invent a noreply email or equate the selected account with a push/API actor.
+- Never inspect collaborator access or choose push, pull-request, reviewer, or merge actors; those belong to a later remote workflow.
 - Never query private email endpoints or request additional scopes merely to resolve commit attribution.
 - Never print tokens, credentials, signing-key material, or unrelated values.
 - Never silently recover from an invalid explicit identity by selecting another identity.

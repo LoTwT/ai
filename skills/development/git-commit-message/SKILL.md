@@ -1,6 +1,6 @@
 ---
 name: git-commit-message
-description: "Generate commit messages from Git staged changes or validate supplied messages without creating a commit. Change-accuracy validation uses staged changes; rules-only validation can run with an empty index. Prioritize repository instructions and commitlint rules, then recent commit history, and fall back to built-in Conventional Commits conventions. Trigger for requests that only ask to generate, revise, or validate a commit message, such as 'generate a commit message', 'write a commit message', 'validate this commit message', '生成 commit message', '写提交信息', or '检查这个 commit message'. Do not trigger when the user intends to execute git commit; execution intent belongs to git-commit."
+description: "Generate commit messages from Git staged changes or validate supplied messages without creating a commit. Change-accuracy validation uses staged changes; rules-only validation can run with an empty index. Apply current-request and applicable user/project instructions before commitlint rules, then recent commit history, and finally built-in Conventional Commits conventions. Trigger for requests that only ask to generate, revise, or validate a commit message, such as 'generate a commit message', 'write a commit message', 'validate this commit message', '生成 commit message', '写提交信息', or '检查这个 commit message'. Do not trigger when the user intends to execute git commit; execution intent belongs to git-commit."
 ---
 
 # Git Commit Message Skill
@@ -19,6 +19,8 @@ This skill owns:
 - Coherence checks that may recommend splitting staged changes.
 
 It does not run `git add`, `git reset`, `git commit`, or `git push`, and it does not inspect author or committer identity.
+
+Git/GitHub account instructions may also contain commit-message or execution-provenance rules. Apply those relevant rules, but do not treat account roles, Git identities, or remote actors as commit-message fields. In particular, do not derive `Co-authored-by` or Agent provenance trailers from a GitHub login, commit author, push actor, PR author, reviewer, or merge actor.
 
 ## Workflow Summary
 
@@ -69,12 +71,12 @@ When staged-change analysis is requested, block merge, rebase, cherry-pick, or r
 
 Apply this precedence:
 
-1. Explicit repository instructions.
+1. Message- and provenance-specific directives from the current request and all applicable user/project instructions, using normal instruction authority and scope.
 2. Commitlint configuration and statically resolvable rules.
 3. Recent commit-message style.
 4. Built-in Conventional Commits fallback.
 
-Read only likely sources such as `CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING*`, `README.md`, repository development documentation, commitlint configuration, and `package.json`. Inspect recent subjects when history exists:
+Use the applicable instruction context already supplied for the task; do not scan unrelated home-directory files. Read only likely repository sources such as `CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING*`, `README.md`, repository development documentation, commitlint configuration, and `package.json`. Ignore account-workflow statements that do not govern message construction or execution provenance. Inspect recent subjects when history exists:
 
 ```bash
 git log -10 --format=%s
@@ -103,7 +105,7 @@ Choose type and scope from the purpose and behavior of the change, not mechanica
 
 ## Step 5: Apply Resolved Agent Provenance
 
-When an ordered sequence of reliably resolved execution-provenance groups is supplied, merge it into the candidate before normalization and validation. The consuming workflow uses reliable runtime fields by default and applies only explicit request-scoped user overrides. It obtains user confirmation only when required data remains unresolved. Follow [references/message-rules.md#agent-execution-provenance](references/message-rules.md#agent-execution-provenance) as the sole policy for inclusion, repository overrides, group parsing and matching, field values and sources, existing-trailer conflicts, ordering, and user disclosure. Standalone message generation or validation supplies no execution provenance by default.
+When an ordered sequence of reliably resolved execution-provenance groups is supplied, merge it into the candidate before normalization and validation. The consuming workflow uses reliable runtime fields by default and applies only explicit request-scoped user overrides. It obtains user confirmation only when required data remains unresolved. Follow [references/message-rules.md#agent-execution-provenance](references/message-rules.md#agent-execution-provenance) as the sole policy for inclusion, repository overrides, group parsing and matching, field values and sources, existing-trailer conflicts, ordering, and user disclosure. Standalone message generation or validation supplies no execution provenance by default. Identity-selection directives may determine author/committer attribution in `git-identity-check`, but they never supply execution-provenance values.
 
 ## Step 6: Normalize the Candidate
 
@@ -187,7 +189,8 @@ When followed by `git-commit`:
 - Read staged changes only when staged-change analysis is required.
 - Never substitute unstaged or untracked content for staged input.
 - Never modify files, Git configuration, or the index.
-- Never inspect or choose author/committer identity.
+- Never inspect or choose author/committer identity or any push, pull-request, reviewer, or merge actor.
+- Never infer message trailers from account-role mappings or use a GitHub account as Agent execution provenance.
 - Never execute repository-controlled code to resolve or validate message rules.
 - Never claim full validation when relevant rules remain unresolved.
 - Never force unrelated staged changes into one generic message.
