@@ -11,8 +11,7 @@
 
 ### Daily
 
-- [food-calorie-estimator](./skills/daily/food-calorie-estimator/SKILL.md): 用于从食物照片中系统化估算食物重量和热量，侧重食物识别、份量推断、热量计算和置信度判断。
-- [food-calorie-tracker](./skills/daily/food-calorie-tracker/SKILL.md): 用于记录每日饮食，按餐次累计食物和热量，并生成带明细表格与食物照片的汇总长图。
+- [food-calorie](./skills/daily/food-calorie/SKILL.md): 用于从食物图片或文字估算份量和热量，在当前对话中按日期与餐次记录、累计、查询或纠正饮食，并按需生成兼容旧 JSON 的每日汇总长图。
 
 ## docs
 
