@@ -1,8 +1,8 @@
 ---
 name: git-cleanup
-description: "占位:待设计。本地写:worktree/分支盘点清理。"
+description: Development placeholder for git-cleanup; implementation pending.
 ---
 
-# git-cleanup(占位)
+# git-cleanup
 
-> 本 skill 正在重构设计中,内容待定。
+Implementation pending.

@@ -1,8 +1,8 @@
 ---
 name: git-commit
-description: "占位:待设计。本地写:staging + 执行提交。"
+description: Development placeholder for git-commit; implementation pending.
 ---
 
-# git-commit(占位)
+# git-commit
 
-> 本 skill 正在重构设计中,内容待定。
+Implementation pending.
