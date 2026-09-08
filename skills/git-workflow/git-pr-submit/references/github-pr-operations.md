@@ -10,6 +10,27 @@ Read the API user with the same connector or process-scoped credential used for 
 
 Read the PR template from the target repository's applicable base/default branch and relevant contribution instructions. If multiple mandatory templates cannot be selected from context, resolve that choice. Do not overwrite checklists with claims about checks that were not performed.
 
+## Default PR description
+
+When no applicable repository template or required description format exists, use the following fallback for a new PR. A failed template lookup does not establish absence. Respect explicit user formatting requests and localize headings and text to the requested or repository language.
+
+```markdown
+## Summary
+
+<Explain the problem, resulting behavior, and relevant reason.>
+
+## Validation
+
+- <Checks actually performed and their results.>
+- <Relevant validation not performed and why; omit if none.>
+```
+
+For small changes, one to three summary sentences are usually enough; expand when needed. Add key changes, impact and migration notes, screenshots, or related issues only when useful. Always explain actual breaking changes, required migrations, and prerequisite dependencies; separate sections are optional.
+
+Start the body at heading level two without repeating the PR title. Remove placeholders and empty sections, and avoid redundant summaries or unsupported checklists. Report validation honestly, including when no checks were run; the template itself does not require extra tests.
+
+When updating an existing PR, preserve its established structure unless the user requests reformatting.
+
 ## Create
 
 Query all relevant open PRs for exact head repository/branch and base repository/branch. Paginate and compare repository IDs, not just owner/branch labels. Reuse a unique exact match; a same-head PR with another base needs examination rather than a duplicate by default.
