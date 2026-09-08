@@ -5,9 +5,32 @@
 ### Development
 
 - [agent-config-setup](./skills/development/agent-config-setup/SKILL.md): 用于从内置模板初始化项目级 Agent 配置（`AGENTS.md`、`CLAUDE.md`、`docs/index.md`）；与现有文件冲突时需逐一确认后才覆盖。
-- [git-commit](./skills/development/git-commit/SKILL.md): 用于编排完整的本地 Git commit 流程，组合 message 与 identity 检查；本地缺少显式 email 时可只读选择本机 GitHub 账号并查询其 public email，统一确认后执行一次提交并验证实际结果；不切换账号、不自动暂存或 push。
-- [git-commit-message](./skills/development/git-commit-message/SKILL.md): 用于只读生成或校验 commit message；生成和变更准确性检查基于暂存区，纯规则校验可在暂存区为空时执行，不创建 commit。
-- [git-identity-check](./skills/development/git-identity-check/SKILL.md): 用于只读解析当前仓库实际生效的 Git author/committer identity；本地缺少显式 email 时可选择本机 GitHub 账号并查询其 public email 作为进程级 fallback，同时检查必要字段和仓库约束，不修改配置、认证状态或执行提交。
+
+### Git Workflow
+
+Seven independently usable skills cover local preparation, commits, branch publication, PR metadata, content review, merging, and task cleanup. Account roles and repository policies come from applicable user/project instructions; the skills contain no personal account matrix. Each skill owns its references and can be installed independently.
+
+| Skill | Responsibility |
+|---|---|
+| [git-workspace](./skills/git-workflow/git-workspace/SKILL.md) | Inspect repository/account state; configure account-use policy; prepare branches/worktrees; synchronize, restack, and recover local operations |
+| [git-commit](./skills/git-workflow/git-commit/SKILL.md) | Exact local commits, message-only work, and author/committer-only checks |
+| [git-push](./skills/git-workflow/git-push/SKILL.md) | Publish exact commits to remote branches with verified transport identity and update conditions |
+| [git-pr-submit](./skills/git-workflow/git-pr-submit/SKILL.md) | Create PRs from published heads and maintain PR/stack metadata |
+| [git-review](./skills/git-workflow/git-review/SKILL.md) | Review change content; publish review results only within explicit authorization |
+| [git-pr-merge](./skills/git-workflow/git-pr-merge/SKILL.md) | Check authoritative merge gates and verify immediate, queued, or asynchronous merge results |
+| [git-cleanup](./skills/git-workflow/git-cleanup/SKILL.md) | Inventory and remove authorized local/remote task resources |
+
+The calling agent composes operations only when the request needs them. Existing authorization persists within the same category, targets, and effects; dependent writes wait for verified prerequisites. There is no mandatory setup/router skill, shared runtime database, or cross-skill file dependency.
+
+See the [workflow design](./docs/git-workflow.md) for ownership and handoff rules.
+
+#### Review record
+
+The [implementation and ablation review](./docs/git-workflow-review.md) records previous development checks and their limitations. The test harness and raw experiment artifacts are no longer included in this repository.
+
+#### Development and publication
+
+Repository source is developed separately from installed skills. Do not replace, symlink, or overwrite the user's installed Git skills during development. Installation/replacement is a separate requested publication step after review, using a fixed verified source snapshot. These packages have no mandatory sibling-file dependencies; a combined workflow still needs the relevant capabilities available.
 
 ### Daily
 
