@@ -19,7 +19,9 @@ The head must already exist remotely with the expected commits. If publication i
 
 ## Prepare and Authorize
 
-Choose create or update from the request and current PR state. Read the applicable target repository PR template and contribution rules. Prepare an accurate title/body based on the actual base-to-head diff, purpose, and performed checks. Preserve required template structure and truthful checklist states; do not invent issue links, approvals, DCO/CLA declarations, or test results.
+Choose create or update from the request and current PR state. For creation or requested title/body changes, read the applicable target repository PR template and contribution rules. Prepare the requested text based on the actual base-to-head diff, purpose, and performed checks. Preserve required template structure and truthful checklist states; do not invent issue links, approvals, DCO/CLA declarations, or test results.
+
+For other metadata updates, skip title/body preparation; still inspect the diff or repository rules when needed to validate the requested field changes.
 
 For an update, identify the exact fields and preserve other user-authored content. Base and draft/ready changes are meaningful effects, not incidental cleanup. Existing authorization is reusable for unchanged targets and effects; resolve material ambiguity before writing.
 
