@@ -8,7 +8,7 @@ Use an explicit host and base repository; read base/head repository IDs, branche
 
 Read the API user with the same connector or process-scoped credential used for writing, for example `gh api --hostname HOST user --jq .login`. An environment token can override a stored active account. Use existing credential facilities without printing secrets, persisting a login switch, or broadening scopes. Apply applicable role rules and repository permissions; if evidence is insufficient, stop the write.
 
-Read the PR template from the target repository's applicable base/default branch and relevant contribution instructions. If multiple mandatory templates cannot be selected from context, resolve that choice. Do not overwrite checklists with claims about checks that were not performed.
+For creation or requested title/body changes, read the PR template from the target repository's applicable base/default branch and relevant contribution instructions. If multiple mandatory templates cannot be selected from context, resolve that choice. Do not overwrite checklists with claims about checks that were not performed.
 
 ## Default PR description
 

@@ -5,12 +5,6 @@ description: "识别食物图片或文字描述，估算食物份量与热量，
 
 # 食物热量估算与记录
 
-## 读取必要资料
-
-- 执行任何估算或重算前，完整读取 [references/estimation-method.md](references/estimation-method.md) 和 [references/food-calorie-index.md](references/food-calorie-index.md)。
-- 创建、读取、纠正或物化饮食记录前，完整读取 [references/record-schema.md](references/record-schema.md)。
-- 仅在用户明确要求生成汇总图时运行 `scripts/generate_summary.py`。
-
 ## 路由意图
 
 先把请求归入一个模式；不要因为识别到餐次词以外的普通食物描述而默认记录。
@@ -29,6 +23,15 @@ description: "识别食物图片或文字描述，估算食物份量与热量，
 2. 未明确要求汇总时，不要自动生成图片。
 3. 没有可用记录时，不要生成空汇总。
 4. 不要把营养诊断、减肥处方、宏量营养素追踪或跨对话持久化扩展进本流程。
+
+## 按需读取资料
+
+先按模式选择资料，复用当前上下文中已读取且仍适用的内容；需要时只补读相关章节。
+
+- 新估算或变更食物、做法、糖度、加料等计算依据时，读取 [估算方法](references/estimation-method.md) 的核心原则及适用的识别、份量、计算、校验和 [置信度判定](references/estimation-method.md#判断置信度) 章节，并按其数据优先级查询 [个人索引](references/food-calorie-index.md)。
+- `record` / `correct`：按 [字段规则](references/record-schema.md#字段规则) 组织对话内条目，不物化 JSON。创建或修改枚举字段时查阅对应 [枚举](references/record-schema.md#枚举)；生成或更新数量及 `weight_g` 时查阅适用的 [数量投影规则](references/record-schema.md#数量与旧重量投影)。仅在需要时查阅规范的校验章节。仅修改份量且原能量依据仍适用时，使用下文的纠正规则，无需重读估算方法和索引。
+- `status`：直接汇总已存储的 `item.calories`；需要确认求和语义时，只查阅 [合计规则](references/record-schema.md#合计规则)。
+- `summary`：读取完整的 [JSON 规范](references/record-schema.md)，按下文汇总流程校验、物化并生成图片。
 
 ## 维护对话内状态
 
@@ -60,7 +63,7 @@ daily_records[date]
 
 ### 2. 识别并估算
 
-严格执行 `references/estimation-method.md`：
+需要新估算或变更计算依据时，按 `references/estimation-method.md` 的适用章节执行：
 
 1. 先识别品牌、包装文字、容量和营养标签，再扫描主食、蛋白质、蔬菜、汤、饮品、零食与明确可见的蘸料。
 2. 为每项确定食物名称、烹饪方式、识别依据与置信度。
