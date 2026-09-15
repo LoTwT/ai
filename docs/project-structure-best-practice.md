@@ -1,5 +1,7 @@
 # Claude Code 项目文件结构最佳实践
 
+> 本文的 `docs/` 布局为早期参考示例。使用 `agent-config-setup` 初始化项目时，请遵循[当前文档模板](../skills/development/agent-config-setup/references/docs/index.md)中的目录约定。
+
 ## 完整目录结构
 
 ```
