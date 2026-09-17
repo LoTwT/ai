@@ -18,6 +18,8 @@ Author/committer selection belongs to identity handling, not message trailers. A
 
 When applicable instructions require Agent-Tool, Agent-Model, or Agent-Effort, use only exact runtime-provided values or explicit overrides for this operation. Omit unavailable optional fields. If a required field is unavailable, report that specific missing input. Do not infer provenance from stored preferences, model families, repository files, or previous tasks.
 
+`Model` in the commit preview and `Agent-Model` in a trailer must contain the executing model's exact **model identity**. Preserve that identity verbatim. A client/tool name, UI display label, or configured model selector/alias alone does not establish model identity. Keep reasoning effort separate in `Effort` / `Agent-Effort`; do not append it to the model identity.
+
 Keep user-supplied legitimate trailers intact and avoid duplicate/conflicting keys. Do not auto-append provenance when no applicable instruction requires it.
 
 ## Deliver
