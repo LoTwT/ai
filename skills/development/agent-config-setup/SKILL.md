@@ -1,6 +1,6 @@
 ---
 name: agent-config-setup
-description: "Initialize project-level Agent configuration by creating AGENTS.md, CLAUDE.md, and docs/index.md from bundled reference templates. Trigger when the user asks to initialize or create project Agent configuration, such as '初始化 Agent 配置', '创建 AGENTS.md 和 CLAUDE.md', or 'setup agent config'."
+description: "Initialize project-level Agent configuration by creating AGENTS.md and docs/index.md from bundled reference templates. Trigger when the user asks to initialize or create project Agent configuration, such as '初始化 Agent 配置', '创建 AGENTS.md', or 'setup agent config'."
 ---
 
 # Agent Config Setup
@@ -22,7 +22,6 @@ The resolved target root must already exist and be a directory. Do not create a 
 Process only these template mappings:
 
 - `references/AGENTS.md` → `AGENTS.md`
-- `references/CLAUDE.md` → `CLAUDE.md`
 - `references/docs/index.md` → `docs/index.md`
 
 Before writing anything:
@@ -36,7 +35,7 @@ Before writing anything:
    - `conflict`: the target is a regular file but differs from the template.
    - `blocked`: the target exists but is not a regular file.
 
-Inspect all three targets before taking any write action. If any target is `blocked`, stop, report every blocked path, and leave all targets unchanged. Do not replace directories, symbolic links, or other non-regular paths.
+Inspect both targets before taking any write action. If any target is `blocked`, stop, report every blocked path, and leave all targets unchanged. Do not replace directories, symbolic links, or other non-regular paths.
 
 ## Step 3: Handle Conflicts
 
@@ -61,11 +60,11 @@ Proceed only when there are no unresolved conflicts.
 
 Do not translate, expand, customize, or infer project-specific content while copying templates.
 
-Only create or replace the three mapped target files and any missing parent directories required for them. Do not modify or delete other files, including other content under `docs/`.
+Only create or replace the two mapped target files and any missing parent directories required for them. Do not modify or delete other files, including other content under `docs/`.
 
 ## Step 5: Report the Result
 
-After Step 4 completes, report the outcome for each of the three targets:
+After Step 4 completes, report the outcome for each of the two targets:
 
 - `created`: the target did not exist and was written from the template.
 - `replaced`: an authorized conflict was overwritten with the template contents.

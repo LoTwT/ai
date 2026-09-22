@@ -4,7 +4,7 @@
 
 ### Development
 
-- [agent-config-setup](./skills/development/agent-config-setup/SKILL.md): 用于从内置模板初始化项目级 Agent 配置（`AGENTS.md`、`CLAUDE.md`、`docs/index.md`）；与现有文件冲突时需逐一确认后才覆盖。
+- [agent-config-setup](./skills/development/agent-config-setup/SKILL.md): 用于从内置模板初始化项目级 Agent 配置（`AGENTS.md`、`docs/index.md`）；与现有文件冲突时需逐一确认后才覆盖。
 
 ### Git Workflow
 
