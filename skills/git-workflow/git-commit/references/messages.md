@@ -6,11 +6,13 @@ Select the task: generate from a selected diff; validate supplied text against t
 
 Discover repository message requirements in applicable instructions, contribution documentation, and configured tooling such as commitlint, and follow those requirements for generation and validation. Respect explicit requests and the normal instruction hierarchy. When the repository defines no message convention, default to [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/). Nearby commits can inform wording but cannot override requirements, replace that fallback, or prove that a test ran.
 
+Write commit messages in English by default. Follow a different language when explicitly requested by the user or specified by applicable repository instructions, contribution documentation, or configuration files, respecting instruction precedence. Configuration that only defines message format does not override the default language.
+
 For the default, use `<type>[optional scope][!]: <description>` with a type matching the change: `feat` for a feature, `fix` for a bug fix, or another appropriate type. Enclose a scope in parentheses, as in `fix(search): handle empty queries`. Scope, body, and footers are optional unless required by the change or an applicable rule. Mark breaking changes with `!` or a `BREAKING CHANGE:` footer. Do not invent a repository-specific type list, scope list, or subject-length limit from the general convention.
 
 Describe the final actual selection, not the whole working tree or abandoned attempts. Mention behavior, reason, and relevant validation; do not enumerate files when that obscures the change. Preserve required issue references and breaking-change information when supported by evidence.
 
-Validate the exact full message: required subject format, allowed scope/type where applicable, body/footer requirements, truthful test claims, and consistency with selected changes. Explain meaningful normalization to supplied text; do not silently change its intent.
+Validate the exact full message: required language and subject format, allowed scope/type where applicable, body/footer requirements, truthful test claims, and consistency with selected changes. Explain meaningful normalization to supplied text; do not silently change its intent.
 
 ## Attribution and execution provenance
 
