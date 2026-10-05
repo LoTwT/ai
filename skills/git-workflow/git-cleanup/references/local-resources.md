@@ -4,7 +4,9 @@ Read this before removing a local branch or worktree.
 
 ## Inventory and eligibility
 
-Identify the actual repository and each exact worktree path, branch/ref, tip, lock, and branch occupancy. Inspect staged/unstaged/untracked files and ignored data. A clean tracked status does not make a directory disposable; ignored build outputs may be regenerable, but ignored credentials or user notes may not be.
+Identify the actual repository and each exact worktree path, branch/ref, tip, lock, and branch occupancy.
+
+Inspect staged/unstaged/untracked files and relevant ignored data before checkout switches or worktree/directory changes, and whenever applicable policy requires it. For deletion of an unoccupied branch alone, with no checkout or directory changes, omit unrelated file inventories after checking task ownership and dependencies. A clean tracked status does not make a directory disposable; ignored build outputs may be regenerable, but ignored credentials or user notes may not be.
 
 Check task ownership and known active dependencies. Inspect unpushed commits and whether changes reached the intended retained base. `git branch -d` can consider a configured upstream instead of the desired trunk, so its success alone is not an integration check. For squash merges, use verified PR/patch evidence to decide whether unique commits still represent unmerged work.
 
