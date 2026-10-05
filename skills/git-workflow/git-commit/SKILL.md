@@ -29,7 +29,7 @@ Record the branch, old HEAD (or unborn state), selected index tree, exact final 
 
 ## Authorization
 
-Use the single-block commit preview in [selection-and-execution.md](references/selection-and-execution.md), including actual staging state, full message, author/committer, Agent/Model/Effort, validation, and execution status. Show identity sources only when needed to explain a discrepancy or choice, or when requested. Reuse existing authorization when it already covers that exact scope; do not demand a ceremonial second confirmation.
+Use the single-block commit preview in [selection-and-execution.md](references/selection-and-execution.md), including actual staging state, full message, author/committer, Agent and a single-line Agent-Models field containing all included Model/Effort pairs, validation, and execution status. Show identity sources only when needed to explain a discrepancy or choice, or when requested. Reuse existing authorization when it already covers that exact scope; do not demand a ceremonial second confirmation.
 
 Creating a normal commit, amending a commit, and rewriting multiple commits are different effects. An ordinary commit request does not authorize amend, an empty commit, hook bypass, or automatic staging of unrelated work. Ask only when the concrete operation exceeds the request or leaves a material choice unresolved.
 

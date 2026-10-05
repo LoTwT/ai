@@ -24,7 +24,9 @@ commit_env.update({
 })
 ```
 
-Do not replace the whole environment with four variables. Preserve HOME, PATH, signing/agent configuration, hook discovery, and unrelated execution settings. Scope overrides to the operation and its child processes; do not persist them into Git config. Do not copy provenance values from account configuration.
+Do not replace the whole environment with four variables. Preserve HOME, PATH, signing/agent configuration, hook discovery, and unrelated execution settings. Pass this separate environment to each validation/commit subprocess; do not mutate shared `os.environ` or a shared shell's exported identity while tasks overlap. Do not persist identities into Git config, including repository config shared by worktrees. Do not copy provenance values from account configuration.
+
+Ordinary commit attribution does not require changing a GitHub login. Separate repositories can commit with separate identity environments; simultaneous staging/commits in one worktree still require coordination because its index and HEAD are shared.
 
 Validate both identities with `git var` using this same environment. For amend, Git may preserve the previous author's identity despite these environment values; use the explicit preservation/replacement and author-date procedure in [selection-and-execution.md](selection-and-execution.md). Resolve signing requirements independently: an author name is not a signing key and a signature is not a transport identity. A missing key or rejected hook is a blocker, not permission to disable it.
 

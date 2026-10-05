@@ -39,9 +39,8 @@ Remaining changes: <excluded paths/hunks with staged/unstaged/untracked state, o
 Author:    <full name and email>
 Committer: <full name and email>
 
-Agent:  <executing client/tool>
-Model:  <exact model identity or Not provided by runtime>
-Effort: <runtime value or Not provided by runtime>
+Agent: <executing client/tool>
+Agent-Models: <model> <effort> [ / <model> <effort> ...]
 
 Commit message:
 ----------------------------------------
@@ -59,7 +58,7 @@ Execution: <authorized; recheck branch, HEAD, and selection before committing | 
 
 Use actual staging and validation outcomes, never sample success values. Expand failed or unresolved checks rather than hiding them in a combined result. An identity check compares the effective Git attribution with the intended identities; it is not remote account authentication. Show identity sources only for a discrepancy, a choice requiring explanation, or an explicit request. Do not add a separate message-convention field. Message delimiters are display framing, not part of the stored message; never truncate the message.
 
-Keep Agent, Model, and Effort visible. Resolve Model as the executing model's exact model identity under the [execution provenance rules](messages.md#attribution-and-execution-provenance). Use reliable current runtime evidence, not configured defaults, model families, repository content, or previous tasks. Unknown display values alone do not block a commit. Preview fields do not require message trailers; resolve any required trailers separately under [messages.md](messages.md).
+Keep the executing Agent visible and show all included Model/Effort pairs in one `Agent-Models` line under the [execution provenance rules](messages.md#attribution-and-execution-provenance). The brackets above indicate optional additional entries; do not print them. Resolve values for the corresponding contribution, preserving their pairing and order; show each component's source separately when applicable instructions require it. Mark unavailable optional preview values as `Not provided by runtime`; never put placeholders in a message trailer. Unknown optional display values alone do not block a commit; missing required provenance values do. Preview fields do not require message trailers; resolve requested or required trailers separately under [messages.md](messages.md).
 
 For amend, add the replaced commit and author preservation/replacement effects, including author-date changes when relevant. Add signing readiness when signing is enabled or required; verify the actual signature after execution. A brief change summary is optional. Do not append a confirmation question when existing authorization covers the operation; a missing prerequisite or unresolved authorization must appear in execution status.
 

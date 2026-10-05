@@ -6,7 +6,11 @@ Read this for PR creation and ordinary metadata updates.
 
 Use an explicit host and base repository; read base/head repository IDs, branches, current OIDs, fork parent/source, and any existing PR's author and state. Do not infer the source repository from a same-named local branch. Remote evidence can be sufficient without a checkout.
 
-Read the API user with the same connector or process-scoped credential used for writing, for example `gh api --hostname HOST user --jq .login`. An environment token can override a stored active account. Use existing credential facilities without printing secrets, persisting a login switch, or broadening scopes. Apply applicable role rules and repository permissions; if evidence is insufficient, stop the write.
+Reuse a verified identity context while its selected account, host, target scope, transport, and credential binding remain unchanged and verifiable. Credential setup and actor probes below apply only to a new or invalidated context. Check permissions, protection, and target state as required for the current operation.
+
+For each authenticated read or write, select the API account for that operation under applicable policy. With gh, privately capture `gh auth token --hostname HOST --user LOGIN`; reject errors and empty output. Copy the process environment, remove inherited `GH_TOKEN`, `GITHUB_TOKEN`, `GH_ENTERPRISE_TOKEN`, and `GITHUB_ENTERPRISE_TOKEN`, then set the captured token in `GH_TOKEN` for github.com and subdomains of ghe.com or `GH_ENTERPRISE_TOKEN` for Enterprise Server. Clear stale `GH_HOST`/`GH_REPO` selectors and use explicit host/repository targets. Do not mutate a shared environment.
+
+Require `gh api --hostname HOST user --jq .login` in that context to succeed and match LOGIN, then execute with the same captured token. Use separate contexts when queries and mutations require different actors. Missing, rejected, expired, or mismatched credentials stop dependent work; never retry under the active or another account. A connector must bind the probe and operation to the same credential. Do not print/store tokens, put them in command arguments, enable credential-bearing traces, switch shared logins, or treat `GH_CONFIG_DIR` alone as identity isolation. Account binding does not grant repository permission or broaden token scopes.
 
 For creation or requested title/body changes, read the PR template from the target repository's applicable base/default branch and relevant contribution instructions. If multiple mandatory templates cannot be selected from context, resolve that choice. Do not overwrite checklists with claims about checks that were not performed.
 
@@ -51,4 +55,4 @@ An error can occur after successful creation. Query the exact tuple and inspect 
 
 Verify URL/ID, author, head/base, OID, draft state, and changed fields. Return unresolved partial work without broadening the operation.
 
-Sources: [GitHub PR creation](https://cli.github.com/manual/gh_pr_create), [GitHub pull-request API](https://docs.github.com/en/rest/pulls/pulls).
+Sources: [GitHub PR creation](https://cli.github.com/manual/gh_pr_create), [GitHub pull-request API](https://docs.github.com/en/rest/pulls/pulls), [GitHub account token](https://cli.github.com/manual/gh_auth_token), [GitHub CLI environment](https://cli.github.com/manual/gh_help_environment).

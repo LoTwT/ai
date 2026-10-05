@@ -27,7 +27,7 @@ A comment, approve, and request-changes review are distinct actions. Use only th
 
 ## Execute
 
-Analysis returns findings and verification limits without remote writes. Publication uses the reviewed commit OID and valid diff anchors, with prepared literal text. If the head changed, review the delta and revalidate findings before posting; do not claim an old review covers new commits.
+Analysis returns findings and verification limits without remote writes. Publication uses the reviewed commit OID and valid diff anchors, with prepared literal text. If the reviewed head, base, or range changed, review the affected delta and revalidate findings before posting; do not claim an old review covers a changed snapshot.
 
 For a follow-up, identify the existing review/comment/thread and author. Edit or reply only as requested and permitted; do not overwrite another author's content or resolve threads by default.
 

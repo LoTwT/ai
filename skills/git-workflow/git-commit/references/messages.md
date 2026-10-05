@@ -18,11 +18,23 @@ Validate the exact full message: required language and subject format, allowed s
 
 Author/committer selection belongs to identity handling, not message trailers. Add co-author or sign-off trailers only with appropriate evidence and authorization. Never claim DCO/CLA acceptance or human participation from inference.
 
-When applicable instructions require Agent-Tool, Agent-Model, or Agent-Effort, use only exact runtime-provided values or explicit overrides for this operation. Omit unavailable optional fields. If a required field is unavailable, report that specific missing input. Do not infer provenance from stored preferences, model families, repository files, or previous tasks.
+Record provenance when requested by the user or required by applicable instructions. Model/Effort provenance can contain one or more paired entries for the selected changes. Resolve each entry's values from reliable runtime evidence for that contribution or an explicit user override scoped to it. The committing agent's runtime does not establish another contributor's values. Do not infer provenance from stored preferences, role names, model families, repository files, or unrelated tasks.
 
-`Model` in the commit preview and `Agent-Model` in a trailer must contain the executing model's exact **model identity**. Preserve that identity verbatim. A client/tool name, UI display label, or configured model selector/alias alone does not establish model identity. Keep reasoning effort separate in `Effort` / `Agent-Effort`; do not append it to the model identity.
+The model component of each entry in the preview and `Agent-Models` trailer must contain that contribution's exact **model identity**. Preserve that identity verbatim. A client/tool name, UI display label, or configured model selector/alias alone does not establish model identity. The following effort component records reasoning effort; it is not part of the model identity.
 
-Keep user-supplied legitimate trailers intact and avoid duplicate/conflicting keys. Do not auto-append provenance when no applicable instruction requires it.
+Resolve each included entry independently. A different model or effort can form another entry; do not overwrite earlier entries that still describe the selected work. Ask only for missing required values or an ambiguous pairing, identifying the affected entry. Omit unavailable optional fields such as Agent-Tool; do not invent values or silently drop a required entry. Keep task-scoped values with their sources and contribution scope rather than making them defaults for other agents or tasks.
+
+When recording Model/Effort pairs, write exactly one `Agent-Models` trailer on one physical line. Each entry is `<model> <effort>`; join entries with ` / ` (a slash with one space on each side). A single pair uses the same field without a separator. Do not also generate `Agent-Model` or `Agent-Effort` trailers. Illustrative values:
+
+```text
+Agent-Models: model-a high / model-b high / model-a max
+```
+
+Split only on ` / `, then on each entry's final space to recover its model and single-token effort. A slash inside a model identity such as `provider/model-a` is not a separator. If a supplied value contains a newline or the reserved delimiter, or the effort contains whitespace, ask for an unambiguous exact value rather than silently altering it. Reject empty entries or missing components.
+
+Preserve each pairing and the supplied entry order. The same model with different efforts and different models with the same effort are valid. Do not independently deduplicate or reorder Model and Effort. Verify the single field and its full ordered list after committing.
+
+Keep legitimate user-supplied trailers intact. Explain any conversion of supplied legacy provenance to this format, and resolve ambiguous pairings before conversion. Show provenance sources separately in the preview when required; source labels are not part of the `Agent-Models` value. Do not add entries beyond the requested or policy-required scope, or infer permission to amend an existing commit to retrofit them.
 
 ## Deliver
 

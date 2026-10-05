@@ -4,7 +4,13 @@ Read this for readiness checks and ordinary PR merges.
 
 ## Current evidence
 
-Resolve repository/PR, head and base OIDs, PR author, API actor and permissions, requested method, applicable instructions, and allowed repository methods. Verify the actual API user in the same host-specific process/connector context used for mutation; do not infer it from local Git identity or persistently switch accounts.
+Resolve repository/PR, head and base OIDs, PR author, API actor and permissions, requested method, applicable instructions, and allowed repository methods. Resolve accounts for authenticated queries and the merge separately under applicable policy; neither local Git identity nor the active gh login is actor evidence.
+
+Reuse a verified identity context while its selected account, host, target scope, transport, and credential binding remain unchanged and verifiable. Credential setup and actor probes below apply only to a new or invalidated context. Check permissions, protection, and target state as required for the current operation.
+
+With gh, privately capture `gh auth token --hostname HOST --user LOGIN`, rejecting errors and empty output. In a copied process environment, remove inherited `GH_TOKEN`, `GITHUB_TOKEN`, `GH_ENTERPRISE_TOKEN`, and `GITHUB_ENTERPRISE_TOKEN`; set only the captured token in `GH_TOKEN` for github.com and subdomains of ghe.com or `GH_ENTERPRISE_TOKEN` for Enterprise Server. Clear stale `GH_HOST`/`GH_REPO` selectors and use explicit targets. Require `gh api --hostname HOST user --jq .login` to succeed and match LOGIN, then reuse that token/context for execution. Give different query/merge accounts separate contexts. A connector must provide equivalent binding.
+
+If lookup, authentication, or identity verification fails, stop the dependent operation; never fall back to another account. Do not mutate a shared environment, switch persistent logins, or treat `GH_CONFIG_DIR` alone as credential isolation. Keep tokens out of arguments, URLs, files, output, and credential-bearing traces. Changing the account, host, or credential requires new verification.
 
 Read complete required-check and status evidence, required reviewers/CODEOWNERS where relevant, review state/commit coverage, unresolved conversations, draft/closed state, mergeability, rulesets/protection, and merge queue requirements. Paginate relevant collections. A green subset, cached readiness label, or unknown mergeability is not proof of eligibility.
 
@@ -32,4 +38,4 @@ Check whether the PR already merged before issuing a request and after any timeo
 
 Read back merged state, actual merged head/set, resulting commit(s), mergedBy, and available attribution. If metadata is incomplete, report the specific unknown without manufacturing a receipt.
 
-Sources: [GitHub CLI merge](https://cli.github.com/manual/gh_pr_merge), [GitHub protected branches](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches).
+Sources: [GitHub CLI merge](https://cli.github.com/manual/gh_pr_merge), [GitHub protected branches](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches), [GitHub account token](https://cli.github.com/manual/gh_auth_token), [GitHub CLI environment](https://cli.github.com/manual/gh_help_environment).

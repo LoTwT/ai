@@ -27,7 +27,7 @@ Optional exceptions specify an **exact target repository, operation, and account
 | PR merge | API | PR base repository |
 | Remote branch deletion | Git | Actual destination repository |
 
-List PR creation and update separately when only one differs; name specific review events when needed. PR reads target the base repository. Verification reads and account probes for a planned write use that write's selected account, not an unrelated read exception.
+List PR creation and update separately when only one differs; name specific review events when needed. PR reads target the base repository. Account-identity probes use the credentials of the selected actor. Repository/PR queries, including preflight, dependency, and result-state queries for a planned write, retain the read account selected under applicable policy.
 
 The following is a fictional example, not a default to install:
 
@@ -56,7 +56,7 @@ The following is a fictional example, not a default to install:
 3. Within applicable policy, use the operation exception, then the host default for the required account kind. Unresolved conflicts require a choice, not row-order precedence. Never borrow another host's default.
 4. Unspecified commit fields use effective Git identity. Preserve replayed authors; amend follows the requested preservation/replacement decision. Validate identity values and signing separately.
 5. For a missing remote selection, present verified candidates and ask only for the needed choice. Reuse answers within their stated scope. An active login is not an implicit preference; public read-only work needs no setup.
-6. Verify the actor using [accounts-and-remotes.md](accounts-and-remotes.md). Missing credentials, mismatches, or insufficient permissions block only dependent work; do not substitute another account.
+6. Bind and verify the selected account using [accounts-and-remotes.md](accounts-and-remotes.md), for authenticated reads and writes independently. Freeze the credential/key in the operation's process context; an active-account check followed by an unbound command is insufficient. Missing credentials, mismatches, or insufficient permissions block only dependent work; do not substitute another account.
 
 ## Configure on demand
 

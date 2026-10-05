@@ -13,7 +13,7 @@ This skill owns local and remote task-branch deletion, worktree removal, and sta
 
 ## Inventory
 
-Read [local-resources.md](references/local-resources.md). Resolve repository/worktree, exact branch refs and OIDs, local changes including ignored/untracked data, unpushed commits, branch occupancy, locks, and known active tasks.
+Read [local-resources.md](references/local-resources.md) for local cleanup. Resolve the repository, exact branch refs/OIDs, unpushed commits, worktree occupancy/locks, and known active tasks. Inspect staged/unstaged/untracked and relevant ignored data when the operation switches a checkout or changes/removes a worktree directory, or when applicable policy requires it.
 
 Check integration against the intended retained base, not merely any configured upstream. Squash integration may need PR/patch evidence because ancestry differs. Query complete relevant open PR dependencies when remote branches or stacks are involved.
 
@@ -21,7 +21,7 @@ Classify each candidate as **retain**, **eligible and authorized**, or **needs a
 
 ## Identity and Authorization
 
-Local-only cleanup does not require an unrelated API login. For remote deletion, read [remote-and-prune.md](references/remote-and-prune.md): verify the transport actor in the actual deletion context, API actor for dependency queries where used, target repository, permissions, and protection.
+Purely local cleanup does not require an unrelated API login. For authenticated remote queries, remote deletion, or networked prune, read [remote-and-prune.md](references/remote-and-prune.md): bind the selected API/transport accounts to their respective operations, and verify target repository, permissions, and protection.
 
 Reuse existing authorization for the exact deletion category, targets, and effects. Applicable instructions may define a narrow merge-and-cleanup bundle; verify all its conditions. Do not require one new confirmation per item when an explicit batch already covers them.
 
@@ -29,7 +29,7 @@ Worktree removal, deleting unique/unpublished commits, and force deletion must b
 
 ## Execute
 
-Immediately reread candidate OIDs, data, occupancy, and dependencies. Prefer ordinary branch/worktree removal; preserve locks and ongoing work. Do not use forced removal as a fallback.
+Immediately reread candidate OIDs, occupancy, dependencies, and any file data needed for the planned operation. Prefer ordinary branch/worktree removal; preserve locks and ongoing work. Do not use forced removal as a fallback.
 
 Remote deletion uses an explicit expected-OID condition on the exact branch, never an unconditional delete. Prune is a separate batch operation: inspect actual fetch destinations, pruning configuration, and the complete proposed deletion set before authorizing it. Before pruning stale refs, read [Prune safety](references/remote-and-prune.md#prune-safety).
 

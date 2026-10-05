@@ -10,6 +10,8 @@ Record old branch tips, index selection, worktree changes, and in-progress opera
 
 ## Refresh narrowly
 
+Resolve the read account for the exact fetch destination and bind its HTTPS credential or SSH identity using [accounts-and-remotes.md](accounts-and-remotes.md). Do not inherit an unrelated active login or assume the later push account also owns the fetch.
+
 Inspect relevant fetch refspecs and prune/tag settings. Fetch only the required source, without pruning, following tags, recursing into unrelated repositories, or updating unrelated branches. For a known branch, one bounded approach is an explicit source fetch into FETCH_HEAD with configured destination mappings disabled:
 
 ```text

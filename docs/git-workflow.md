@@ -20,13 +20,21 @@ PR code updates belong to push; PR fields belong to submit. Review findings belo
 
 An ordinary feature can use workspace → commit → push → PR submit → review → PR merge → cleanup, but this is not a mandatory pipeline. A message-only request needs commit alone; a remote PR check can run without a checkout or workspace invocation.
 
-Each step reads applicable policies and freshly verifies the identity/evidence needed for its own effect. Workspace can diagnose accounts and discover initial context, but its report is not a reusable authentication certificate. Commit author/committer, API actor, transport actor, PR author, reviewer, and merger are separate facts.
+Each step applies current policy and refreshes mutable evidence needed for its effect. Reuse verified identity context while the selected account, host, target scope, transport, and credential binding remain unchanged and verifiable. A workspace report alone does not establish that binding. Commit author/committer, API actor, transport actor, PR author, reviewer, and merger are separate facts.
 
 Workspace's optional `configure-accounts` mode defines default author/committer, host-specific Git/API accounts, and exact repository/operation exceptions in applicable agent instructions. It reuses existing policy, resolves only needed choices, and persists rules when requested. User-wide configuration does not require a checkout. Other skills consume the resulting instructions directly; they do not require workspace initialization or its reference files. Policy completeness, instruction loading, and authentication readiness are separate results. See the [policy format and selection rules](../skills/git-workflow/git-workspace/references/account-policy.md).
 
 A task-local handoff should retain exact repository/worktree and target IDs, source/base/ref OIDs, relevant evidence, completed or uncertain operations, and existing authorization. It is not a fixed schema or a replacement for rereading mutable state. If a tool times out, reconciliation precedes retry.
 
 Authorization is determined by the current request and applicable instructions. Reuse it while operation category, target set, and material effects remain covered. A new force update, additional stack predecessor, changed publication event, or newly discovered data loss can expand that scope. Routine implementation steps within existing scope do not require repeated confirmation.
+
+## Account isolation across concurrent tasks
+
+Authenticated reads and writes bind the account selected for their own operation, host, and repository. Establish a new context by capturing the explicitly named account's credential and verifying its actual actor, then retain that same credential in a separate process environment through execution. Reuse a still-valid context under the conditions above. Missing or mismatched credentials stop dependent work without fallback to the active login. Switching a shared login and restoring it afterward is not isolation.
+
+GitHub CLI token selection and Git transport selection are separate: HTTPS Git requires a destination-bound credential facility with competing helpers/headers and fallback disabled; SSH requires an explicitly bounded key/certificate/agent context verified against the provider. Local commit author/committer values use subprocess environments without persistent configuration changes. Each independently installable skill carries the instructions needed for its own operations; there is no shared mutable account selector.
+
+These mechanisms prevent account-switch races between independent projects when followed. Skills remain instructions, not an enforced command wrapper or OS sandbox. Account isolation does not serialize the same index, branch, or PR, guarantee credential availability, or replace permissions and OID/head conditions. Source validation does not install updates into the user's existing skill copies.
 
 ## Stack workflow
 
