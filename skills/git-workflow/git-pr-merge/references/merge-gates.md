@@ -12,9 +12,15 @@ With gh, privately capture `gh auth token --hostname HOST --user LOGIN`, rejecti
 
 If lookup, authentication, or identity verification fails, stop the dependent operation; never fall back to another account. Do not mutate a shared environment, switch persistent logins, or treat `GH_CONFIG_DIR` alone as credential isolation. Keep tokens out of arguments, URLs, files, output, and credential-bearing traces. Changing the account, host, or credential requires new verification.
 
+Run binding and probe commands in bash (for example `bash -c`), not zsh. Pass a command and its options as separate arguments, an array, or a function. Do not store a whole command line in a string variable and expand it as a command: zsh does not split such a variable on whitespace and runs it as one command name.
+
 Read complete required-check and status evidence, required reviewers/CODEOWNERS where relevant, review state/commit coverage, unresolved conversations, draft/closed state, mergeability, rulesets/protection, and merge queue requirements. Paginate relevant collections. A green subset, cached readiness label, or unknown mergeability is not proof of eligibility.
 
 Distinguish absent requirements from requirements that could not be read. Require exact current-head approval only when the platform or applicable policy requires it; do not invent a universal human-review policy. Never impersonate a human-only approver or bypass protection to compensate for missing evidence.
+
+## Wait for pending checks
+
+When the request covers waiting and required checks are still running, watch them with a background or monitored command in the bound context, for example `gh pr checks PR_URL --required --watch --fail-fast`; do not poll with foreground `sleep` loops. The watch follows the PR's current head, not a fixed OID. Without `--watch`, exit status 8 means pending. `no required checks reported` or `no checks reported` means none is reported yet or none is configured, not a pass or failure; confirm the required set from protection or rulesets. After the wait, refresh all gates once: before reporting in check mode, or as the pre-mutation refresh in merge mode. Checks still running when a bounded wait ends are pending, not failed.
 
 ## Method and result message
 

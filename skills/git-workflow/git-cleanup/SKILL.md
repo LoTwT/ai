@@ -15,7 +15,7 @@ This skill owns local and remote task-branch deletion, worktree removal, and sta
 
 Read [local-resources.md](references/local-resources.md) for local cleanup. Resolve the repository, exact branch refs/OIDs, unpushed commits, worktree occupancy/locks, and known active tasks. Inspect staged/unstaged/untracked and relevant ignored data when the operation switches a checkout or changes/removes a worktree directory, or when applicable policy requires it.
 
-Check integration against the intended retained base, not merely any configured upstream. Squash integration may need PR/patch evidence because ancestry differs. Query complete relevant open PR dependencies when remote branches or stacks are involved.
+Check integration against the intended retained base, not merely any configured upstream. Squash integration may need PR/patch evidence because ancestry differs. Query complete relevant open PR dependencies when remote branches or stacks are involved. Run independent reads that share one verified context together in a single execution and check each result separately; keep writes, and reads that depend on an earlier result, in order.
 
 Classify each candidate as **retain**, **eligible and authorized**, or **needs a decision**, with the reason. Missing data or dependency evidence means retain until resolved.
 
@@ -37,6 +37,6 @@ Keep enough task-local evidence to identify deleted refs and recoverable commit 
 
 ## Retry and Verify
 
-After each operation, verify absence of the exact resource and preservation of retained work. Already absent is complete only for the same resolved target; it is not evidence about a similarly named path or another repository.
+A read-only query that fails with a transport error such as EOF or a reset connection can be retried once in the same bound context; if it fails again, report that observation as unknown. An authentication rejection or actor mismatch is a result, not a reason to retry. After each operation, verify absence of the exact resource and preservation of retained work. Already absent is complete only for the same resolved target; it is not evidence about a similarly named path or another repository.
 
 After uncertain remote deletion, reread the exact ref. If it was recreated or advanced, preserve it and reassess; never refresh the lease and delete blindly. Report completed, retained, failed, and unknown resources separately.

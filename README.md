@@ -8,11 +8,12 @@
 
 ### Git Workflow
 
-Seven independently usable skills cover local preparation, commits, branch publication, PR metadata, content review, merging, and task cleanup. Account roles and repository policies come from applicable user/project instructions; the skills contain no personal account matrix. Each skill owns its references and can be installed independently.
+Eight independently usable skills cover account policy, local preparation, commits, branch publication, PR metadata, content review, merging, and task cleanup. Account roles and repository policies come from applicable user/project instructions; the skills contain no personal account matrix. Each skill owns its references and can be installed independently.
 
 | Skill | Responsibility |
 |---|---|
-| [git-workspace](./skills/git-workflow/git-workspace/SKILL.md) | Inspect repository/account state; configure account-use policy; prepare branches/worktrees; synchronize, restack, and recover local operations |
+| [git-accounts](./skills/git-workflow/git-accounts/SKILL.md) | Diagnose expected and observed identities for a host, repository, and operation; configure account-use policy on demand |
+| [git-workspace](./skills/git-workflow/git-workspace/SKILL.md) | Inspect repository state; prepare branches/worktrees; synchronize, restack, and recover local operations |
 | [git-commit](./skills/git-workflow/git-commit/SKILL.md) | Exact local commits, message-only work, and author/committer-only checks |
 | [git-push](./skills/git-workflow/git-push/SKILL.md) | Publish exact commits to remote branches with verified transport identity and update conditions |
 | [git-pr-submit](./skills/git-workflow/git-pr-submit/SKILL.md) | Create PRs from published heads and maintain PR/stack metadata |

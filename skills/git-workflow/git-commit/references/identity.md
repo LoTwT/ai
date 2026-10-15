@@ -12,19 +12,7 @@ Preserve literal name/email values. Reject empty values or newline/control-chara
 
 ## Apply once
 
-Build the execution environment by copying the current environment and overlaying only selected identity values:
-
-```python
-commit_env = os.environ.copy()
-commit_env.update({
-    "GIT_AUTHOR_NAME": author_name,
-    "GIT_AUTHOR_EMAIL": author_email,
-    "GIT_COMMITTER_NAME": committer_name,
-    "GIT_COMMITTER_EMAIL": committer_email,
-})
-```
-
-Do not replace the whole environment with four variables. Preserve HOME, PATH, signing/agent configuration, hook discovery, and unrelated execution settings. Pass this separate environment to each validation/commit subprocess; do not mutate shared `os.environ` or a shared shell's exported identity while tasks overlap. Do not persist identities into Git config, including repository config shared by worktrees. Do not copy provenance values from account configuration.
+Run validation and the commit with the current environment plus only `GIT_AUTHOR_NAME`, `GIT_AUTHOR_EMAIL`, `GIT_COMMITTER_NAME`, and `GIT_COMMITTER_EMAIL` set for that process, for example as a command prefix. Do not replace the whole environment; preserve HOME, PATH, signing/agent configuration, and hook discovery. Do not export identities in a shared shell or mutate a shared environment while tasks overlap. Do not persist identities into Git config, including repository config shared by worktrees. Do not copy provenance values from account configuration.
 
 Ordinary commit attribution does not require changing a GitHub login. Separate repositories can commit with separate identity environments; simultaneous staging/commits in one worktree still require coordination because its index and HEAD are shared.
 

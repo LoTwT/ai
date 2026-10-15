@@ -11,7 +11,7 @@ Select **commit**, **message only**, or **identity only** from the request. The 
 
 For a commit, establish the repository/worktree and select changes from the user's intent. A request to commit the current task can authorize staging clearly attributable task files or hunks within applicable permissions, without a separate staging confirmation. Honor an explicit staged-only or partial selection; do not silently include unrelated work. Inspect first and ask only when a material scope ambiguity remains.
 
-Local synchronization commits and continuation of an existing merge/rebase/cherry-pick/revert belong to `git-workspace`. Remote publishing belongs to `git-push`. A request to commit does not imply either action.
+Local synchronization commits and continuation of an existing merge/rebase/cherry-pick/revert belong to `git-workspace`. Remote publishing belongs to `git-push`. Account diagnosis and account-use policy belong to `git-accounts`; identity-only mode answers only which author/committer this commit will use. A request to commit does not imply synchronization or publication.
 
 ## Identity
 
@@ -21,11 +21,11 @@ Do not assume GitHub login, repository owner, transport actor, and commit identi
 
 ## Prepare the Selection and Message
 
-Read [selection-and-execution.md](references/selection-and-execution.md) for staging, partial selections, and execution. Preserve the existing index boundary; use literal paths or explicit patches for authorized additions.
+Read [selection-and-execution.md](references/selection-and-execution.md) for staging, partial selections, and execution. Preserve the existing index boundary; use literal paths or explicit patches for authorized additions. Run independent local reads, such as status, index, configuration, recent history, and message rules, together in a single execution and check each result separately.
 
 Read [messages.md](references/messages.md) to generate or validate the exact final message. Discover and follow applicable repository message rules; default to Conventional Commits 1.0.0 when none exist, respecting explicit requests and instruction precedence. Describe the actual selected change and report checks truthfully. Message-only mode returns text and validation findings, then stops.
 
-Record the branch, old HEAD (or unborn state), selected index tree, exact final message, identity, and required validation. Run checks relevant to the change. A hook or tool changing the selection or message requires review of the changed result before any corrective commit.
+Record the branch, old HEAD (or unborn state), selected index tree, exact final message, identity, and required validation. Check hook, signing, and provenance readiness before the preview and ask once for everything missing. Run checks relevant to the change. A hook or tool changing the selection or message requires review of the changed result before any corrective commit.
 
 ## Authorization
 
