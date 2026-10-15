@@ -8,18 +8,13 @@ Inspect status and both cached/uncached diffs using NUL-delimited names when par
 
 The user's requested scope determines the selection. A request to commit the current task can cover directly staging clearly attributable files or hunks when applicable permissions allow it; execution permission alone does not establish which changes belong in the commit. Respect staged-only requests and partial selections, and ask only about unresolved ownership or scope that affects the commit.
 
-For an already selected index, do not run add again. For whole paths within the established selection, use literal pathspecs and an argument vector:
-
-```python
-subprocess.run(
-    ["git", "-C", str(repo), "--literal-pathspecs", "add", "--", *paths],
-    check=True,
-)
-```
+For an already selected index, do not run add again. For whole paths within the established selection, run `git --literal-pathspecs add -- PATH...` with each path as a separate argument.
 
 For selected hunks, use reviewed patches or interactive staging under the user's scope, then recheck the index. Preserve unrelated staged entries; when the requested commit excludes them, prepare an explicit index-preservation plan rather than clearing the index silently. Do not use `commit -a` or path arguments as a substitute for a reviewed selection.
 
 ## Commit preview
+
+Before the preview, check every blocker together: the hooks this commit or authorized amend runs, located with `git rev-parse --git-path hooks` (it accounts for `core.hooksPath` and linked worktrees), and whether the tools they invoke exist; signing requirements and key availability; and required provenance. Report all blockers and missing values in one message. Hooks for other operations are not commit prerequisites. Bypassing an applicable hook requires explicit authorization.
 
 For commit mode, present one compact block in this order, based on the actual prepared selection. Localize labels and explanations to the conversation; preserve names, emails, paths, and the complete prepared message verbatim. Message-only and identity-only modes keep their focused outputs.
 
@@ -64,7 +59,7 @@ For amend, add the replaced commit and author preservation/replacement effects, 
 
 ## Freeze and execute
 
-Record branch or detached/unborn state, old HEAD, and `git write-tree` for the selected index. Inspect the full staged diff and final message, attribution, required checks, and relevant hook/signing configuration. A write-tree failure such as unresolved index entries must be resolved before committing.
+Record branch or detached/unborn state, old HEAD, and `git write-tree` for the selected index. Inspect the full staged diff and final message, attribution, and required checks. A write-tree failure such as unresolved index entries must be resolved before committing.
 
 Immediately before execution, compare the branch, HEAD, and index tree again. Use the same environment in which identities were validated. Invoke normal `git commit --cleanup=verbatim --file MESSAGE_FILE` with no selected paths and no amend unless amendment was explicitly requested. Preserve hooks and signing; do not retry a rejection with bypass flags.
 

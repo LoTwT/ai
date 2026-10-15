@@ -12,6 +12,8 @@ For each authenticated read or write, select the API account for that operation 
 
 Require `gh api --hostname HOST user --jq .login` in that context to succeed and match LOGIN, then execute with the same captured token. Use separate contexts when queries and mutations require different actors. Missing, rejected, expired, or mismatched credentials stop dependent work; never retry under the active or another account. A connector must bind the probe and operation to the same credential. Do not print/store tokens, put them in command arguments, enable credential-bearing traces, switch shared logins, or treat `GH_CONFIG_DIR` alone as identity isolation. Account binding does not grant repository permission or broaden token scopes.
 
+Run binding and probe commands in bash (for example `bash -c`), not zsh. Pass a command and its options as separate arguments, an array, or a function. Do not store a whole command line in a string variable and expand it as a command: zsh does not split such a variable on whitespace and runs it as one command name.
+
 For creation or requested title/body changes, read the PR template from the target repository's applicable base/default branch and relevant contribution instructions. If multiple mandatory templates cannot be selected from context, resolve that choice. Do not overwrite checklists with claims about checks that were not performed.
 
 ## Default PR description

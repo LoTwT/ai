@@ -13,7 +13,7 @@ This skill can work without a local checkout when remote evidence is sufficient.
 
 ## Identity and Preconditions
 
-Read [github-pr-operations.md](references/github-pr-operations.md). Resolve host, base repository/branch, head repository/branch/OID, existing PR identity, and API actor in the exact process or connector context used for mutation. Check applicable account roles, permissions, repository instructions, and fork relationship.
+Read [github-pr-operations.md](references/github-pr-operations.md). Resolve host, base repository/branch, head repository/branch/OID, existing PR identity, and API actor in the exact process or connector context used for mutation. Check applicable account roles, permissions, repository instructions, and fork relationship. Run independent reads that share one verified context together in a single execution and check each result separately; keep writes, and reads that depend on an earlier result, in order.
 
 The head must already exist remotely with the expected commits. If publication is needed, the calling agent can run `git-push` when authorized, then reread the result. Do not use PR creation to implicitly push, create a fork, or select another head.
 
@@ -37,6 +37,6 @@ Check that the inspected PR fields and head still match before updating. A concu
 
 Before creating, search all relevant open PRs for the exact head repository/branch and base repository/branch. Reuse a unique match; a different base is a decision, not evidence that another PR should be created.
 
-After an error or timeout, look for the created PR or applied fields before retrying. Inspect closed/merged matches when they explain a prior attempt; do not reopen or recreate without the corresponding intent.
+A read-only query that fails with a transport error such as EOF or a reset connection can be retried once in the same bound context; if it fails again, report that observation as unknown. An authentication rejection or actor mismatch is a result, not a reason to retry. After an error or timeout, look for the created PR or applied fields before retrying. Inspect closed/merged matches when they explain a prior attempt; do not reopen or recreate without the corresponding intent.
 
 Read back the PR URL/ID, author, head/base, changed fields, and stack membership. Report partial metadata updates and leave unrelated fields intact. Return the verified PR and remaining actions; creation does not imply review, merge, or cleanup.

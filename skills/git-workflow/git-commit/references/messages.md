@@ -18,9 +18,16 @@ Validate the exact full message: required language and subject format, allowed s
 
 Author/committer selection belongs to identity handling, not message trailers. Add co-author or sign-off trailers only with appropriate evidence and authorization. Never claim DCO/CLA acceptance or human participation from inference.
 
-Record provenance when requested by the user or required by applicable instructions. Model/Effort provenance can contain one or more paired entries for the selected changes. Resolve each entry's values from reliable runtime evidence for that contribution or an explicit user override scoped to it. The committing agent's runtime does not establish another contributor's values. Do not infer provenance from stored preferences, role names, model families, repository files, or unrelated tasks.
+Record provenance when requested by the user or required by applicable instructions. Model/Effort provenance can contain one or more paired entries for the selected changes. Resolve each value for its contribution in this order and stop at the first reliable source:
 
-The model component of each entry in the preview and `Agent-Models` trailer must contain that contribution's exact **model identity**. Preserve that identity verbatim. A client/tool name, UI display label, or configured model selector/alias alone does not establish model identity. The following effort component records reasoning effort; it is not part of the model identity.
+1. A value already confirmed for this task and contribution, including an explicit user override scoped to it.
+2. A value the executing runtime states directly, such as the exact model identity in its system information.
+3. The current turn's metadata from the orchestrating harness, such as Lody's `lody_session_history` for the current session. Read the assistant entry for the current turn, whose author session is the current session; an incoming message carries its sender's values. Its reasoning effort is the effort; its model ID counts only when it is an exact model identity, not an alias such as `opus`.
+4. One question that asks for every value still missing.
+
+Do not search other sessions, global logs, or process lists. The committing agent's runtime does not establish another contributor's values. Do not infer provenance from stored preferences, role names, model families, repository files, or unrelated tasks.
+
+The model component of each entry in the preview and `Agent-Models` trailer must contain that contribution's exact **model identity**. Preserve that identity verbatim. A client/tool name, UI display label, or model alias does not establish model identity. The following effort component records reasoning effort; it is not part of the model identity.
 
 Resolve each included entry independently. A different model or effort can form another entry; do not overwrite earlier entries that still describe the selected work. Ask only for missing required values or an ambiguous pairing, identifying the affected entry. Omit unavailable optional fields such as Agent-Tool; do not invent values or silently drop a required entry. Keep task-scoped values with their sources and contribution scope rather than making them defaults for other agents or tasks.
 
@@ -38,4 +45,4 @@ Keep legitimate user-supplied trailers intact. Explain any conversion of supplie
 
 ## Deliver
 
-Return the final message and any concrete validation gaps. For execution, store the exact message as UTF-8 in a temporary file and use an argument vector. Do not construct a shell command by interpolating multiline message text. Read the stored commit message back after execution because hooks and cleanup settings can change it.
+Return the final message and any concrete validation gaps. For execution, store the exact message as UTF-8 in a temporary file and use an argument vector. Do not construct a shell command by interpolating multiline message text. Read the stored commit message back after execution because hooks and cleanup settings can change it. Compare the text after the first blank line of `git cat-file commit OID` with the message file; `git log --format=%B` appends a newline and is not an exact comparison.

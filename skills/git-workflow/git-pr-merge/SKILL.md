@@ -13,7 +13,7 @@ Integrating a newer base into head is `git-workspace` then `git-push`, followed 
 
 ## Identity and Evidence
 
-Read [merge-gates.md](references/merge-gates.md). Resolve host/repository, PR, head/base OIDs, actual API actor, permissions, and applicable merge policy. Read authoritative required checks/CI, review coverage, unresolved conversations, draft state, mergeability, branch protection/rulesets, and queue requirements.
+Read [merge-gates.md](references/merge-gates.md). Resolve host/repository, PR, head/base OIDs, actual API actor, permissions, and applicable merge policy. Read authoritative required checks/CI, review coverage, unresolved conversations, draft state, mergeability, branch protection/rulesets, and queue requirements. Run independent reads that share one verified context together in a single execution and check each result separately; keep writes, and reads that depend on an earlier result, in order.
 
 For a native or conventional stack, also read [stack-merge.md](references/stack-merge.md). Determine the actual PR set the platform will merge; a request naming one PR does not automatically authorize its unmentioned predecessors.
 
@@ -33,7 +33,7 @@ Use the explicit method and exact PR or stack operation supported by the current
 
 ## Retry and Verify
 
-Check merged state before execution and after any error or timeout. Already merged is a terminal observation, not a reason to issue another merge. Queued, auto-merge enabled, accepted asynchronous operation, failed, and merged are different outcomes.
+A read-only query that fails with a transport error such as EOF or a reset connection can be retried once in the same bound context; if it fails again, report that observation as unknown. An authentication rejection or actor mismatch is a result, not a reason to retry. Check merged state before execution and after any error or timeout. Already merged is a terminal observation, not a reason to issue another merge. Queued, auto-merge enabled, accepted asynchronous operation, failed, and merged are different outcomes.
 
 Verify the actual merged PR set, resulting commits, mergedBy, and available commit attribution. If only part of a multi-request workflow completed, report per-PR results and preserve the rest for recovery.
 

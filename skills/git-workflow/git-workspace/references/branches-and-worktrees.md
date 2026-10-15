@@ -8,15 +8,7 @@ Reuse an existing workspace only after its branch, starting point, local work, a
 
 Before creation, validate the branch name, resolve the starting ref to an OID, and check the target path including ignored/untracked files. Follow the user's branch/worktree conventions and requested starting state; an arbitrary default branch is not an equivalent substitute.
 
-Typical operations after resolution:
-
-```text
-git switch -c BRANCH START_OID
-git worktree add -b BRANCH PATH START_OID
-git worktree add PATH EXISTING_BRANCH
-```
-
-Use argument vectors and exact values. Do not treat a new worktree as a copy of another checkout's unstaged or staged changes.
+For a new branch, use `git switch -c BRANCH START_OID` or `git worktree add -b BRANCH PATH START_OID`. For an existing unoccupied branch, verify its tip and use `git worktree add PATH BRANCH`. Pass exact values as separate arguments. Do not treat a new worktree as a copy of another checkout's staged or unstaged changes.
 
 Before switching with changes, determine which changes belong to this task and whether they can carry across without changing ownership or staging. Do not rely only on Git refusing an overwrite: Git can successfully carry unrelated changes to another branch. Use an agreed preservation/migration plan for work that must move.
 

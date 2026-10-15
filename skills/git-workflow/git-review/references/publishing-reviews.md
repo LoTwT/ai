@@ -10,6 +10,8 @@ Select the required API account for each authenticated query or publication unde
 
 Require `gh api --hostname HOST user --jq .login` to succeed and match LOGIN in that context, then reuse the same token for the operation. A different actor/host/credential needs a separate verified context; a connector must provide equivalent binding. Missing, rejected, expired, or mismatched credentials stop dependent work without account fallback. Do not mutate shared environment/configuration, switch logins, or treat `GH_CONFIG_DIR` alone as credential isolation. Keep tokens out of arguments, URLs, files, output, and credential-bearing traces. This also applies to read-only review; local-only analysis needs no remote login.
 
+Run binding and probe commands in bash (for example `bash -c`), not zsh. Pass a command and its options as separate arguments, an array, or a function. Do not store a whole command line in a string variable and expand it as a command: zsh does not split such a variable on whitespace and runs it as one command name.
+
 ## Identity and event
 
 Resolve host/repository, PR, author, current head, expected reviewer role, API actor, and permitted event. Use the verified API context selected for this publication. Do not persistently switch accounts or expose tokens.

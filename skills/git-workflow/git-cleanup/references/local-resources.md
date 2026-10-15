@@ -18,7 +18,7 @@ Ordinary branch deletion is preferred after checks. If it fails, inspect and rep
 
 Worktree removal requires authorization covering the actual path and relevant data. Preserve ignored/untracked data unless its disposition is explicitly covered. A locked worktree is not unlocked automatically. Check linked worktree registration and nested repositories/submodules before removal.
 
-For exact ref deletion where compare-and-swap is needed, `git update-ref -d refs/heads/BRANCH OLD_OID` can guard against an OID change, but it bypasses ordinary branch-deletion checks and does not handle branch config like `git branch -d`. Use it only after the same eligibility/occupancy checks and only when this narrower ref operation is appropriate. A tip condition does not protect against a concurrently occupied branch; coordinate active work rather than claiming it does.
+For exact ref deletion where compare-and-swap is needed, `git update-ref -d refs/heads/BRANCH OLD_OID` can guard against an OID change, but it bypasses ordinary branch-deletion checks and does not handle branch config like `git branch -d`. Pass the observed OID: an all-zeros expectation deletes the ref unconditionally. Use it only after the same eligibility/occupancy checks and only when this narrower ref operation is appropriate. A tip condition does not protect against a concurrently occupied branch; coordinate active work rather than claiming it does.
 
 ## Verify
 

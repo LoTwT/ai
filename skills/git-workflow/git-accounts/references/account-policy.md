@@ -29,26 +29,6 @@ Optional exceptions specify an **exact target repository, operation, and account
 
 List PR creation and update separately when only one differs; name specific review events when needed. PR reads target the base repository. Account-identity probes use the credentials of the selected actor. Repository/PR queries, including preflight, dependency, and result-state queries for a planned write, retain the read account selected under applicable policy.
 
-The following is a fictional example, not a default to install:
-
-```markdown
-## Git account policy
-
-- Default new commit author: Developer <dev@example.com>.
-- Default commit committer: Developer <dev@example.com>.
-- On github.com, use developer-account for Git transport.
-- On github.com, use developer-account for platform API operations.
-- Exception: for PR creation and PR metadata updates whose base repository is
-  github.com/example/project, use API account contributor-account.
-- Within applicable instruction precedence, exact repository-and-operation
-  exceptions override host defaults. Unlisted operations use their host default.
-- Keep explicit temporary choices within their stated scope. Use effective Git
-  identity for unspecified commit fields; ask for an unspecified remote account
-  when needed. Do not guess between conflicting applicable selections.
-- Preserve existing authors when replaying commits. These account choices do
-  not grant permission to perform operations or replace authentication checks.
-```
-
 ## Select without ambiguity
 
 1. Follow instruction precedence and explicit request choices within their stated roles, targets, and duration. Exceptions cannot bypass higher-priority restrictions; temporary choices are not saved implicitly.
@@ -56,7 +36,7 @@ The following is a fictional example, not a default to install:
 3. Within applicable policy, use the operation exception, then the host default for the required account kind. Unresolved conflicts require a choice, not row-order precedence. Never borrow another host's default.
 4. Unspecified commit fields use effective Git identity. Preserve replayed authors; amend follows the requested preservation/replacement decision. Validate identity values and signing separately.
 5. For a missing remote selection, present verified candidates and ask only for the needed choice. Reuse answers within their stated scope. An active login is not an implicit preference; public read-only work needs no setup.
-6. Bind and verify the selected account using [accounts-and-remotes.md](accounts-and-remotes.md), for authenticated reads and writes independently. Freeze the credential/key in the operation's process context; an active-account check followed by an unbound command is insufficient. Missing credentials, mismatches, or insufficient permissions block only dependent work; do not substitute another account.
+6. Bind and verify the selected account for each authenticated probe using [accounts-and-remotes.md](accounts-and-remotes.md); a later operation establishes its own binding. Missing credentials, mismatches, or insufficient permissions block only dependent work; do not substitute another account.
 
 ## Configure on demand
 

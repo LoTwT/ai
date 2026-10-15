@@ -15,7 +15,7 @@ PR code updates are pushes even when a PR already exists. A vague request to "up
 
 Read [transport-and-targets.md](references/transport-and-targets.md). Resolve the exact host/repository, effective push destination, full destination refs, source OIDs, and transport actor. Authentication evidence must come from the same transport context that will write; API login and author/committer are not substitutes.
 
-Read applicable instructions and target protection. Do not persistently switch accounts or change remote URLs to make a push work. If topology, actor, or required access cannot be verified, stop the write and report what is missing.
+Read applicable instructions and target protection. Do not persistently switch accounts or change remote URLs to make a push work. If topology, actor, or required access cannot be verified, stop the write and report what is missing. Run independent reads that share one verified context together in a single execution and check each result separately; keep writes, and reads that depend on an earlier result, in order.
 
 ## Authorization
 
@@ -35,6 +35,6 @@ Preserve hooks and signing. Keep the push configuration from expanding the updat
 
 ## Retry and Verify
 
-Read each remote ref back and compare it with the intended source OID. Transport success alone does not prove the expected final state. If a timeout occurred, compare actual remote state before retrying; if another writer advanced a branch, report the observed state rather than overwriting it.
+A read-only query that fails with a transport error such as EOF or a reset connection can be retried once in the same bound context; if it fails again, report that observation as unknown. An authentication rejection or actor mismatch is a result, not a reason to retry. Read each remote ref back and compare it with the intended source OID. Transport success alone does not prove the expected final state. If a timeout occurred, compare actual remote state before retrying; if another writer advanced a branch, report the observed state rather than overwriting it.
 
 For partial stack publication, report success/failure per ref and stop dependent PR changes until their prerequisites are verified. Return a concise result with the exact repository, refs, source and observed OIDs, transport actor, and whether any action remains unresolved.
