@@ -26,7 +26,7 @@ Use `merge --ff-only` for a fast-forward goal, an explicit merge for a merge goa
 
 An explicit cherry-pick/backport or revert request must identify the selected commits, order, target branch, and any merge mainline choice. These transformations and their generated commits remain workspace operations. Recovery authorization covers continuing that operation, not starting extra picks or reverts.
 
-Use the chosen committer environment and preserve original authorship when replaying. Stop on conflicts and follow the recovery reference. Already integrated changes need no new replay; do not use a successful exit code alone as proof.
+Use the chosen committer environment and preserve original authorship when replaying. New integration commits created by merge, cherry-pick, or revert follow the applicable provenance instructions; replayed commits preserve their original trailers. Stop on conflicts and follow the recovery reference. Already integrated changes need no new replay; do not use a successful exit code alone as proof.
 
 ## Verify
 
