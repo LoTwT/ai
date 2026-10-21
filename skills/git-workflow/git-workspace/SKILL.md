@@ -23,7 +23,7 @@ Use existing local state and necessary read-only remote queries. Run independent
 
 For identity-dependent work, read [accounts-and-remotes.md](references/accounts-and-remotes.md). Distinguish effective author/committer, API actor, and Git transport actor. Do not infer one from another or reveal credentials.
 
-Before an operation creates or rewrites commits, resolve the applicable author, committer, and signing requirements. Preserve replayed authors unless explicitly instructed otherwise. Apply overrides in the operation's process environment while preserving normal hooks, signing, and unrelated environment. Identity checks do not log in, persistently switch accounts, or edit global configuration.
+Before an operation creates or rewrites commits, resolve the applicable author, committer, signing, and provenance requirements. Preserve replayed authors unless explicitly instructed otherwise. Apply overrides in the operation's process environment while preserving normal hooks, signing, and unrelated environment. Identity checks do not log in, persistently switch accounts, or edit global configuration.
 
 ## Authorization
 
