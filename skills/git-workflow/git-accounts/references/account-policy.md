@@ -1,6 +1,6 @@
 # Account-use policy
 
-Read this to define or resolve account-selection rules. Policy selects identities; authentication and authorization remain separate. Do not prescribe a human/agent or repository-owner role matrix.
+Read this to define or resolve account-selection rules. Policy selects identities; authentication and authorization remain separate. Do not impose a role matrix; preserve one the user defines and change it only when explicitly requested.
 
 ## Minimal configuration
 
