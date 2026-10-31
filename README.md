@@ -4,7 +4,7 @@
 
 ### Development
 
-- [agent-config-setup](./skills/development/agent-config-setup/SKILL.md): 用于从内置模板初始化项目级 Agent 配置（`AGENTS.md`、`docs/index.md`）；与现有文件冲突时逐个选择覆盖、保留或取消。
+- [agent-config-setup](./skills/development/agent-config-setup/SKILL.md): 用于从内置模板初始化项目级 Agent 配置（`AGENTS.md`、`docs/index.md`）；与现有文件冲突时逐个选择覆盖、保留、合并或取消，合并时由 AI 分析差异并给出建议，最终内容由用户确认。
 
 ### Git Workflow
 
