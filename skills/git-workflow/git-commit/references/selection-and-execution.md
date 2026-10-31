@@ -12,6 +12,12 @@ For an already selected index, do not run add again. For whole paths within the 
 
 For selected hunks, use reviewed patches or interactive staging under the user's scope, then recheck the index. Preserve unrelated staged entries; when the requested commit excludes them, prepare an explicit index-preservation plan rather than clearing the index silently. Do not use `commit -a` or path arguments as a substitute for a reviewed selection.
 
+## Documentation check
+
+Before the preview, check the documents that describe the changed behavior, commands, configuration, structure, or names: mainly `AGENTS.md` (or `CLAUDE.md`), `README.md`, and files under `docs/`, including copies in subdirectories. Locate them by searching for the changed paths, commands, options, and identifiers; do not reread every document. Follow project instructions that map code areas to the documents they require.
+
+Include required updates in the selection under the user's scope. When an update is needed but falls outside the authorized scope, report it as pending rather than editing silently. Record the outcome in the preview's `Docs` field.
+
 ## Commit preview
 
 Before the preview, check every blocker together: the hooks this commit or authorized amend runs, located with `git rev-parse --git-path hooks` (it accounts for `core.hooksPath` and linked worktrees), and whether the tools they invoke exist; signing requirements and key availability; and required provenance. Report all blockers and missing values in one message. Hooks for other operations are not commit prerequisites. Bypassing an applicable hook requires explicit authorization.
@@ -30,6 +36,7 @@ Selected changes:
 
 Staging: <reused existing selection, staged authorized additions, or not staged>
 Remaining changes: <excluded paths/hunks with staged/unstaged/untracked state, or none>
+Docs: <updated: paths | not needed: reason | pending: required update>
 
 Author:    <full name and email>
 Committer: <full name and email>
