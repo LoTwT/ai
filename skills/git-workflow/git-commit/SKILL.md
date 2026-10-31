@@ -25,11 +25,13 @@ Read [selection-and-execution.md](references/selection-and-execution.md) for sta
 
 Read [messages.md](references/messages.md) to generate or validate the exact final message. Discover and follow applicable repository message rules; default to Conventional Commits 1.0.0 when none exist, respecting explicit requests and instruction precedence. Describe the actual selected change and report checks truthfully. Message-only mode returns text and validation findings, then stops.
 
+Before the preview, check whether the selected change makes the repository's documentation inaccurate or incomplete, mainly `AGENTS.md` (or `CLAUDE.md`), `README.md`, and files under `docs/`, including copies in subdirectories. Follow the documentation check in [selection-and-execution.md](references/selection-and-execution.md#documentation-check); include required updates in the selection, or state in the preview why none are needed.
+
 Record the branch, old HEAD (or unborn state), selected index tree, exact final message, identity, and required validation. Check hook, signing, and provenance readiness before the preview and ask once for everything missing. Run checks relevant to the change. A hook or tool changing the selection or message requires review of the changed result before any corrective commit.
 
 ## Authorization
 
-Use the single-block commit preview in [selection-and-execution.md](references/selection-and-execution.md), including actual staging state, full message, author/committer, Agent and a single-line Agent-Models field containing all included Model/Effort pairs, validation, and execution status. Show identity sources only when needed to explain a discrepancy or choice, or when requested. Reuse existing authorization when it already covers that exact scope; do not demand a ceremonial second confirmation.
+Use the single-block commit preview in [selection-and-execution.md](references/selection-and-execution.md), including actual staging state, documentation status, full message, author/committer, Agent and a single-line Agent-Models field containing all included Model/Effort pairs, validation, and execution status. Show identity sources only when needed to explain a discrepancy or choice, or when requested. Reuse existing authorization when it already covers that exact scope; do not demand a ceremonial second confirmation.
 
 Creating a normal commit, amending a commit, and rewriting multiple commits are different effects. An ordinary commit request does not authorize amend, an empty commit, hook bypass, or automatic staging of unrelated work. Ask only when the concrete operation exceeds the request or leaves a material choice unresolved.
 
