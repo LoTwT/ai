@@ -1,6 +1,6 @@
 ---
 name: git-push
-description: "Publish selected local commits to exact remote Git branches, including explicitly authorized non-fast-forward updates. Use for push-only work and PR code updates; PR metadata, branch integration, and remote deletion belong elsewhere."
+description: "Push selected local commits to exact remote Git branches, including PR code updates and explicitly authorized non-fast-forward pushes."
 ---
 
 # Git Push
@@ -9,7 +9,7 @@ description: "Publish selected local commits to exact remote Git branches, inclu
 
 Create or update remote branches from identified local commits. Do not create commits, integrate a base, edit PR metadata, or delete remote refs. Route those actions respectively to `git-commit`, `git-workspace`, `git-pr-submit`, and `git-cleanup`.
 
-PR code updates are pushes even when a PR already exists. A vague request to "update the PR" needs read-only inspection and, if still unresolved, a choice between code publication and metadata changes.
+For "update the PR", use the requested changes and current PR state to resolve whether code publication or metadata work is needed. Ask only if materially different writes remain plausible after inspection.
 
 ## Identity and Target
 
@@ -29,7 +29,7 @@ No implicit tag publication, mirror push, additional push URLs, deletions, fork 
 
 Read [guarded-push.md](references/guarded-push.md). Capture remote OIDs independently of tracking refs, inspect source/target ancestry, and publish frozen source OIDs to full destination refs. Unknown ancestry is not permission to force.
 
-Use an explicit expected-OID lease for authorized history replacement. Do not use a bare `--force`, a leading `+` refspec, or an unspecified `--force-with-lease`. If the lease fails, inspect the changed remote state instead of replacing the expectation and retrying automatically.
+Use an explicit expected-OID lease for authorized history replacement and for a verified fast-forward when the authorized commit range depends on the observed destination tip. Follow applicable policy for the lease. Do not use a bare `--force`, a leading `+` refspec, or an unspecified `--force-with-lease`. If the lease fails, recheck the destination and review its new commit range before deciding whether to proceed.
 
 Preserve hooks and signing. Keep the push configuration from expanding the update set. For a multi-branch operation, choose supported atomic publication when all-or-nothing behavior is required; do not silently fall back to partial updates.
 
@@ -37,4 +37,4 @@ Preserve hooks and signing. Keep the push configuration from expanding the updat
 
 A read-only query that fails with a transport error such as EOF or a reset connection can be retried once in the same bound context; if it fails again, report that observation as unknown. An authentication rejection or actor mismatch is a result, not a reason to retry. Read each remote ref back and compare it with the intended source OID. Transport success alone does not prove the expected final state. If a timeout occurred, compare actual remote state before retrying; if another writer advanced a branch, report the observed state rather than overwriting it.
 
-For partial stack publication, report success/failure per ref and stop dependent PR changes until their prerequisites are verified. Return a concise result with the exact repository, refs, source and observed OIDs, transport actor, and whether any action remains unresolved.
+If a batch partly succeeds, reconcile each ref. When the request allows partial execution, continue authorized, independent updates whose preconditions still hold. Wait to make dependent PR changes until their refs are verified. Report the repository, exact refs, source and observed OIDs, transport actor, and any unresolved effects.

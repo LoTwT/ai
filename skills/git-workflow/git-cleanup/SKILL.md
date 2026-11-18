@@ -1,13 +1,13 @@
 ---
 name: git-cleanup
-description: "Inventory and remove authorized Git task branches, worktrees, and stale references after checking saved data, publication, and active dependencies. Supports exact local and remote branch cleanup; does not merge PRs or delete repositories and forks."
+description: "Inventory or remove exact Git task branches, worktrees, and stale refs. Use for authorized local or remote cleanup after checking saved data, publication, and active dependencies."
 ---
 
 # Git Cleanup
 
 ## Responsibility
 
-Inventory task resources, decide which are eligible under applicable policy, and delete only authorized targets. Start with a dry-run inventory, even when the request already authorizes deletion. A successful merge is evidence about integration, not blanket cleanup authorization.
+Start with a read-only inventory, then delete only eligible and authorized targets. A preview-only request ends with the inventory. Use a verified merge as integration evidence and check applicable cleanup authorization separately.
 
 This skill owns local and remote task-branch deletion, worktree removal, and stale-ref pruning. PR merging belongs to `git-pr-merge`; synchronizing a retained base belongs to `git-workspace`. Repository/fork deletion, broad filesystem cleanup, and stash purging are outside this skill.
 
@@ -25,7 +25,7 @@ Purely local cleanup does not require an unrelated API login. For authenticated 
 
 Reuse existing authorization for the exact deletion category, targets, and effects. Applicable instructions may define a narrow merge-and-cleanup bundle; verify all its conditions. Do not require one new confirmation per item when an explicit batch already covers them.
 
-Worktree removal, deleting unique/unpublished commits, and force deletion must be covered by the request or applicable authorization. Present concrete resources and data consequences before requesting an uncovered decision. Never expand a target just because ordinary deletion fails.
+Worktree removal, deleting unique/unpublished commits, and force deletion must be covered by the request or applicable authorization. Present concrete resources and data consequences before requesting an uncovered decision. Continue with eligible, independently authorized targets when the request allows partial execution. Never expand a target just because ordinary deletion fails.
 
 ## Execute
 

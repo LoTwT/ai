@@ -12,14 +12,14 @@ Check the commits the target branch gains, not only the selected tip; a tip incl
 
 ## Conditional write
 
-Freeze the observed old OID and intended new OID. For an authorized history replacement, bind the lease to the full ref and explicit old OID; for creation an empty expectation requires absence:
+Freeze the observed old OID and intended new OID. Bind the write to the exact old OID for an authorized history replacement or when the authorized fast-forward range depends on that old OID. A remote rollback can leave the same push eligible as a fast-forward while reintroducing commits outside the reviewed range. For branch creation, an empty expectation requires absence.
 
 ```text
 git push --porcelain --no-follow-tags --recurse-submodules=no --force-with-lease=refs/heads/TARGET:OLD_OID DESTINATION NEW_OID:refs/heads/TARGET
 git push --porcelain --no-follow-tags --recurse-submodules=no --force-with-lease=refs/heads/TARGET: DESTINATION NEW_OID:refs/heads/TARGET
 ```
 
-These templates require exact validated arguments and already resolved authorization. An explicit lease can also guard an already-classified fast-forward against a concurrent move, but the client must first verify that the planned old-to-new update is fast-forward: the lease itself permits history replacement.
+Use the first form for a guarded update and the second for creation. For a guarded fast-forward, verify with `git merge-base --is-ancestor OLD_OID NEW_OID` that the exact expected tip is an ancestor of the frozen source. The lease enforces the expected tip but does not enforce ancestry. Use it within applicable authorization and branch protection. If no authorized mechanism can bind the reviewed range to the actual write, report the blocker.
 
 Prevent implicit mirror publication and other destinations. Keep explicit `--no-follow-tags` and `--recurse-submodules=no` for branch-only publication; omitting them can activate configured tag or submodule publication. On-demand recursion may also reject a frozen OID source that does not name a branch. Prefer an explicit verified destination and refspecs, preserving transport hooks/signing. Do not use `--all`, a remote group, or `--mirror` for a bounded task.
 

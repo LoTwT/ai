@@ -201,8 +201,8 @@
 | 固体 `g` | 可食用重量 | `edible_weight` |
 | 饮品 `ml` | 数值上按 `1ml = 1g` 投影 | `volume_proxy` |
 | `piece`，可估单个可食重量 | 数量 × 单个可食重量 | `piece_estimate` |
-| `serving`，有规格重量 | 规格重量 | `serving_conversion` |
-| `serving`，只有规格容量 | 数值上按 `1ml = 1g` 投影 | `volume_proxy` |
+| `serving`，有每份规格重量 | 份数 × 每份规格重量 | `serving_conversion` |
+| `serving`，只有每份规格容量 | 份数 × 每份规格容量，再按 `1ml = 1g` 投影 | `volume_proxy` |
 | `serving`，完全无重量或容量信息 | `0` | `unavailable` |
 
 所有非负投影值使用 `floor(value + 0.5)` 半入取整，输出整数。带骨、带壳、带皮食物的 `weight_g` 使用可食用的 `quantity.value`，不要使用 `gross_value`。
