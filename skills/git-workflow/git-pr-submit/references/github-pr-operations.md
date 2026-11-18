@@ -45,7 +45,7 @@ Confirm the published head OID matches the intended changes. Prepare exact title
 
 ## Update
 
-Fetch the current target fields. Change only authorized fields. Preserve unrelated user edits and template content. Use explicit PR identity with `gh pr edit` or the corresponding API; draft/ready transitions may require a separate operation. Re-read after each requested change if later steps depend on it.
+Fetch the current target fields. Change only authorized fields. Preserve unrelated user edits and template content. Use explicit PR identity with `gh pr edit` or the corresponding API. Draft/ready transitions may require a separate operation. Keep the pre-write values and any result returned for each mutation until verification. Re-read after each requested change if later steps depend on it.
 
 PR metadata APIs do not universally provide field-level compare-and-swap. Re-read just before writing, minimize changed fields, and compare the response; do not claim a race-free update. If concurrent user edits are observed, reconcile the actual delta before retrying.
 
@@ -54,6 +54,10 @@ Use structured request bodies or UTF-8 text files for arbitrary multiline conten
 ## Reentry
 
 An error can occur after successful creation. Query the exact tuple and inspect the resulting PR before retrying. Check relevant closed/merged PRs when they may be the previous result; a new request is not automatically a reopen request. If two candidates remain plausible, ask which target is intended.
+
+For metadata updates, compare the write result and pre-write values with a fresh read. If the requested value is already present, no further write is needed. If the evidence confirms that value was applied and it now differs, preserve the current value and report the intervening edit, even if the field returned to its pre-write value. When a timeout or incomplete response leaves the outcome uncertain, the pre-write value alone does not establish that the write never applied. Preserve the current value and report uncertainty if the outcome cannot be resolved.
+
+Resume unattempted updates or retry writes known not to have applied only if authorization and preconditions still hold. Continue independent changes while a field is unresolved.
 
 Verify URL/ID, author, head/base, OID, draft state, and changed fields. Return unresolved partial work without broadening the operation.
 

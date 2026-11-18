@@ -12,6 +12,6 @@ A native stack may have same-repository and topology restrictions that a convent
 
 After a merge, read the platform's resulting relationships first. It may already have retargeted remaining PRs or changed branch tips. Maintain only the remaining authorized metadata changes. Local restack belongs to workspace, publication to push, and branch removal to cleanup.
 
-Record each updated PR's before/after base and membership. On partial failure, inspect actual state and resume only missing changes. Do not rebuild a complete stack from a stale local plan.
+Record each updated PR's before/after base and membership. On partial failure, apply the [reentry rules](github-pr-operations.md#reentry) before resuming. Do not rebuild a complete stack from a stale local plan.
 
 Sources: [Creating GitHub stacks](https://docs.github.com/en/pull-requests/how-tos/create-pull-requests/creating-stacked-pull-requests), [Stack APIs](https://docs.github.com/en/pull-requests/reference/stacked-pull-requests-apis-and-webhooks).

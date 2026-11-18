@@ -1,6 +1,6 @@
 ---
 name: git-accounts
-description: "Diagnose which account-selection rules apply to a host, repository, and operation and which Git defaults, transport actors, and API actors are observed, or define, save, and repair account-use policy in agent instructions. Use on demand; a specific commit's author/committer belongs to git-commit. It does not log in, switch accounts, install credentials, or bind identities for other operations."
+description: "Diagnose Git and GitHub account selection or save account-use rules in agent instructions. Use to compare expected and observed identities for a host, repository, and operation. For the author or committer of a specific commit, use git-commit."
 ---
 
 # Git Accounts
@@ -15,7 +15,7 @@ Policy work needs no checkout. Repository-dependent facts and repository excepti
 
 ## Diagnose
 
-Read [accounts-and-remotes.md](references/accounts-and-remotes.md). Diagnose a concrete context: host, target repository when relevant, and operation. The same host can select different accounts for different operations; without a named operation, report per operation kind instead of one answer per host.
+Read [accounts-and-remotes.md](references/accounts-and-remotes.md). Resolve the host, target repository when relevant, and operation from the request and available evidence. If the operation is unspecified, report what can be established by operation kind. Different operations on the same host can select different accounts.
 
 For each role in that context (commit author, commit committer, Git transport account, API account), report:
 
@@ -35,7 +35,7 @@ Authenticated probes issued by this skill bind and verify the selected account a
 
 Read [account-policy.md](references/account-policy.md) to define, save, or repair account-selection rules: default author/committer, host-specific Git/API accounts, and exact repository/operation exceptions. Reuse clear existing instructions; there is no mandatory first-use setup.
 
-Resolve only the choices the request needs. Temporary selections need not be saved. When persistence is requested, update the relevant instruction section and verify its loading path. Report policy completeness separately from authentication readiness.
+Read existing instructions and resolve independent choices before asking about missing selections. When persistence is requested and the intended rule changes are clear, apply them and verify the instruction loading path. Report policy completeness separately from authentication readiness.
 
 ## Authorization
 

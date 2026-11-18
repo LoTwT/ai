@@ -1,6 +1,6 @@
 ---
 name: git-workspace
-description: "Inspect Git repository state, prepare task branches or worktrees, synchronize or restack local branches, and recover interrupted Git operations. Use for workspace preparation and local integration; account diagnosis and policy, publishing commits, PR operations, and task-resource deletion have separate owners."
+description: "Inspect a Git workspace, prepare branches or worktrees, synchronize or restack local branches, and complete or recover local merge, rebase, cherry-pick, or revert operations."
 ---
 
 # Git Workspace
@@ -17,7 +17,7 @@ Skills can run independently. The calling agent composes capabilities when the u
 
 Read applicable instructions, HEAD/branch, staged/unstaged/untracked changes, relevant ignored data, occupied worktrees, and operations in progress. Read relevant remotes, tracking relationships, and base refs only as needed. Dirty worktrees and detached HEAD do not prevent diagnosis.
 
-Use existing local state and necessary read-only remote queries. Run independent reads together in a single execution and check each result separately; keep reads that depend on an earlier result in order. Fetch changes local refs and belongs to synchronization. Label stale tracking refs and unknown remote state instead of presenting them as current.
+Start with local state and query remote evidence when the request depends on it. Run independent reads together in a single execution and check each result separately. Fetch changes local refs and belongs to synchronization. Label stale tracking refs and unknown remote state.
 
 ## Identity
 
@@ -29,7 +29,7 @@ Before an operation creates or rewrites commits, resolve the applicable author, 
 
 Before repository writes, resolve the worktree, exact branch set, starting/base commits, method, and intended effects. Follow applicable branch conventions; do not invent a remote or default branch. Explain history changes and account for branches occupied elsewhere.
 
-Existing authorization remains valid for the same operation category, target set, and effects. Ask only for unresolved choices that materially change writes or for an uncovered expansion. A local restack does not authorize force push, PR retargeting, or deletion. Unrelated remote-login problems do not block local work.
+Reuse existing authorization for the same operation category, target set, and effects. Make routine reversible choices within that scope, such as reusing a suitable existing worktree, and state material assumptions. Ask when a missing choice materially changes writes or expands scope. A local restack does not authorize force push, PR retargeting, or deletion. Continue independent local work when a remote step is blocked.
 
 ## Execute
 

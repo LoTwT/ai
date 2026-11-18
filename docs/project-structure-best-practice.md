@@ -105,7 +105,7 @@ CLAUDE.md 应该回答三个问题：
 
 - 关于如何配置 Claude Code 本身的元说明
 - Claude 通过读代码就能推断的信息
-- 详细的技术文档（用 `@` 引用代替内联）
+- 详细的技术文档（在文档索引中用普通链接导航）
 
 ### 渐进式披露（Progressive Disclosure）
 
@@ -113,10 +113,10 @@ CLAUDE.md 应该回答三个问题：
 
 ```markdown
 ## 文档
-需要了解项目细节时，先查阅 @docs/index.md。
+需要了解项目细节时，先查阅[文档索引](docs/index.md)。
 ```
 
-这样只有当 Claude 真正需要某块知识时，才会去读对应文件，避免每次加载所有上下文消耗 token。
+按任务需要打开索引和相关文档。Claude Code 的 `@path` 是导入语法，被导入的文件会随引用它的 `CLAUDE.md` 一同加载。普通链接适合需要按任务查阅的材料。[Claude Code 文档](https://code.claude.com/docs/en/memory#import-additional-files)
 
 ### 示例结构
 
@@ -142,7 +142,7 @@ Next.js 14 + TypeScript + Prisma + PostgreSQL
 - 使用具名导出，不用默认导出
 
 ## 文档
-需要了解项目细节时，先查阅 @docs/index.md。
+需要了解项目细节时，先查阅[文档索引](docs/index.md)。
 ```
 
 ---
@@ -159,19 +159,19 @@ Next.js 14 + TypeScript + Prisma + PostgreSQL
 
 ### docs/index.md 的作用
 
-`docs/index.md` 是整个文档目录的导航入口，CLAUDE.md 只需引用这一个文件：
+`docs/index.md` 是文档目录的导航入口，每条链接相对索引所在的目录。
 
 ```markdown
 # 文档索引
 
-- 系统架构：@docs/architecture.md
-- 编码规范：@docs/conventions.md
-- 环境搭建：@docs/setup.md
-- 各包说明：@docs/packages/
-- 当前计划：@docs/plans/2026-q1.md
+- [系统架构](./architecture.md)
+- [编码规范](./conventions.md)
+- [环境搭建](./setup.md)
+- [各包说明](./packages/)
+- [当前计划](./plans/2026-q1.md)
 ```
 
-好处：新增文档时只更新 `index.md`，不需要改动 `CLAUDE.md`；Claude 先读索引再按需读具体文件，真正做到按需加载。
+新增文档时更新索引。Claude 根据索引中描述的阅读场景查阅相关文件。
 
 ### 演进策略
 

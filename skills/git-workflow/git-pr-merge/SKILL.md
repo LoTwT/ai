@@ -1,6 +1,6 @@
 ---
 name: git-pr-merge
-description: "Check GitHub PR merge eligibility and merge an authorized PR or exact stack prefix using the required method. Verify required checks, approvals, protection, current head/base, and queued or completed outcomes. Content review and branch deletion are separate responsibilities."
+description: "Check GitHub PR merge eligibility or merge an authorized PR or stack prefix. Verify required checks, approvals, protection, and the resulting merge or queue state."
 ---
 
 # Git PR Merge
@@ -35,6 +35,8 @@ Use the explicit method and exact PR or stack operation supported by the current
 
 A read-only query that fails with a transport error such as EOF or a reset connection can be retried once in the same bound context; if it fails again, report that observation as unknown. An authentication rejection or actor mismatch is a result, not a reason to retry. Check merged state before execution and after any error or timeout. Already merged is a terminal observation, not a reason to issue another merge. Queued, auto-merge enabled, accepted asynchronous operation, failed, and merged are different outcomes.
 
-Verify the actual merged PR set, resulting commits, mergedBy, and available commit attribution. If only part of a multi-request workflow completed, report per-PR results and preserve the rest for recovery.
+If the request covers waiting for a queued or asynchronous merge to finish, monitor its receipt to completion, a terminal failure, or the requested limit. Refresh the actual PR state after the wait. Report pending state when enqueueing was the requested outcome or the wait reaches its limit.
 
-After a verified merge, inspect platform changes before handing off remaining PR retargeting to `git-pr-submit`, local restack/base synchronization to `git-workspace`, publication to `git-push`, and authorized deletion to `git-cleanup`. Do not execute these merely because merge succeeded.
+Verify the actual merged PR set, resulting commits, `mergedBy`, and available commit attribution. For partial completion, record each PR's outcome and use current state to continue independent, authorized work.
+
+After a verified merge, inspect the resulting platform state. Complete remaining in-scope and authorized PR retargeting with `git-pr-submit`, local restack or base synchronization with `git-workspace`, publication with `git-push`, and deletion with `git-cleanup`. Recheck the prerequisite evidence for each dependent action.

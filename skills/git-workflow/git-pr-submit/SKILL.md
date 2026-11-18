@@ -1,13 +1,13 @@
 ---
 name: git-pr-submit
-description: "Create a GitHub pull request from an already published head branch, or maintain its title, body, base, draft state, and stack association. Use for PR creation and metadata updates; publishing code and posting review findings have separate owners."
+description: "Create a GitHub pull request from a published head branch or update its title, body, base, draft state, or stack membership. For PR code updates, use git-push."
 ---
 
 # Git PR Submit
 
 ## Responsibility
 
-Create or maintain PR metadata. Branch publication belongs to `git-push`; content review and review discussion to `git-review`; merging to `git-pr-merge`. Clarify an unresolved "update PR" request if code and metadata updates would lead to different writes.
+Create or maintain PR metadata. Branch publication belongs to `git-push`, content review and review discussion to `git-review`, and merging to `git-pr-merge`. Use the request and current PR state to resolve a general "update PR" request before asking which changes are intended.
 
 This skill can work without a local checkout when remote evidence is sufficient. For another hosting service, verify equivalent supported operations before acting; never invent GitHub-compatible endpoints.
 
@@ -19,7 +19,9 @@ The head must already exist remotely with the expected commits. If publication i
 
 ## Prepare and Authorize
 
-Choose create or update from the request and current PR state. For creation or requested title/body changes, read the applicable target repository PR template and contribution rules. Prepare the requested text based on the actual base-to-head diff, purpose, and performed checks. Preserve required template structure and truthful checklist states; do not invent issue links, approvals, DCO/CLA declarations, or test results.
+Before preparing a new PR, check all relevant open PRs for the exact head and base repository and branch. Reuse a unique exact match. Investigate matches with a different base before deciding whether a new PR fits the request. Apply only requested metadata changes to an existing match.
+
+For creation or requested title/body changes, read the applicable repository PR template and contribution rules. Give reviewers the context they need from the actual base-to-head diff, purpose, and checks performed. Preserve required template structure and truthful checklist states. Use only verified issue links, approvals, DCO/CLA declarations, and test results.
 
 For other metadata updates, skip title/body preparation; still inspect the diff or repository rules when needed to validate the requested field changes.
 
@@ -35,8 +37,6 @@ Check that the inspected PR fields and head still match before updating. A concu
 
 ## Retry and Verify
 
-Before creating, search all relevant open PRs for the exact head repository/branch and base repository/branch. Reuse a unique match; a different base is a decision, not evidence that another PR should be created.
-
 A read-only query that fails with a transport error such as EOF or a reset connection can be retried once in the same bound context; if it fails again, report that observation as unknown. An authentication rejection or actor mismatch is a result, not a reason to retry. After an error or timeout, look for the created PR or applied fields before retrying. Inspect closed/merged matches when they explain a prior attempt; do not reopen or recreate without the corresponding intent.
 
-Read back the PR URL/ID, author, head/base, changed fields, and stack membership. Report partial metadata updates and leave unrelated fields intact. Return the verified PR and remaining actions; creation does not imply review, merge, or cleanup.
+Read back the PR URL/ID, author, head/base, changed fields, and stack membership. Use the [reentry rules](references/github-pr-operations.md#reentry) to reconcile each requested update before retrying. Report the verified PR, any intervening edits, and unresolved outcomes.

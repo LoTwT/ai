@@ -1,108 +1,56 @@
 ---
 name: agent-config-setup
-description: "Initialize or update project-level Agent configuration by creating AGENTS.md and docs/index.md from bundled reference templates, or merging the templates into existing files. Trigger when the user asks to initialize, create, update, or sync project Agent configuration, such as '初始化 Agent 配置', '创建 AGENTS.md', '更新 Agent 配置', '同步 AGENTS.md 模板', or 'setup agent config'."
+description: "Initialize or sync a project's AGENTS.md and docs/index.md from bundled templates, preserving existing project rules unless the user approves replacement or a merge. Use for requests such as 初始化 Agent 配置, 创建 AGENTS.md, or 同步 AGENTS.md 模板."
 ---
 
 # Agent Config Setup
 
-Initialize project-level Agent configuration from the bundled reference templates.
+Create, replace, or merge the two managed configuration files and verify each result against its approved source.
 
-## Step 1: Resolve the Target Project Root
+## Resolve the target
 
-Resolve the target project root in this order:
+Use the user's directory if supplied, otherwise the current Git repository root or, outside a repository, the current working directory. Use its physical path, for example `cd <root> && pwd -P`. The root may be a symbolic link to an existing directory. If the directory is missing or invalid, report the path and stop.
 
-1. Use the directory explicitly supplied by the user.
-2. Otherwise, when the current directory is inside a Git repository, use the repository root.
-3. Otherwise, use the current working directory.
-
-The resolved target root must already exist and be a directory. Do not create a missing project root. Stop and report the path when this requirement is not met.
-
-Resolve the root to its physical path, for example with `cd <root> && pwd -P`, and build every target path from that physical root. A symbolic link in the root path itself is accepted.
-
-## Step 2: Inspect the Target State
-
-Process only these template mappings. Template paths are relative to this skill's directory; target paths are relative to the target root.
+Resolve templates relative to this skill and targets relative to the physical project root.
 
 - `references/AGENTS.md` → `AGENTS.md`
 - `references/docs/index.md` → `docs/index.md`
 
-Before writing anything:
+Inspect both targets and their path components below the root without following symbolic links. Check existing regular files with `cmp -s <template> <target>` to compare the exact bytes.
 
-1. Check each target and each path component below the target root without following symbolic links.
-2. Compare each existing regular target file with its template using `cmp -s <template> <target>`. Do not compare by reading and re-rendering the contents.
-3. Classify each target as:
-   - `create`: the target does not exist, every existing path component below the root is a real directory, and the nearest existing directory is writable.
-   - `unchanged`: the target is a regular file and `cmp` exits with 0.
-   - `conflict`: the target is a regular writable file and `cmp` exits with 1.
-   - `blocked`: any other state, including a target that is not a regular file, a path component below the root that is a symbolic link or not a directory, a `cmp` exit status other than 0 or 1, or a target or directory that cannot be written.
-4. List the direct children of `docs/` other than `index.md`, without modifying them. Use this list only for a `docs/index.md` merge proposal and the Step 5 report.
+| State | Evidence |
+|---|---|
+| `create` | Target is absent, existing components below the root are real directories, and the nearest existing directory is writable. |
+| `unchanged` | Target is a regular file and `cmp` exits with 0. |
+| `conflict` | Target is a writable regular file and `cmp` exits with 1. |
+| `blocked` | Any other state, including a symbolic link, a non-regular target, an invalid parent, missing write access, or a `cmp` error. |
 
-Inspect both targets before taking any write action. A `blocked` target is skipped and reported in Step 5; continue with the other target. Do not replace or write through directories, symbolic links, or other non-regular paths.
+If `docs/` is a real directory and its index is not blocked, list its direct children other than `index.md` for the merge proposal and final report.
 
-## Step 3: Handle Conflicts
+## Resolve conflicts before writing
 
-When any target is classified as `conflict`, do not modify any target until every conflict is decided.
+Show the conflicting paths and summarize their differences. Reuse explicit choices that cover those paths. Ask together for the remaining choices. `overwrite` copies the template, `keep` preserves the file, and `merge` prepares a proposal. Apply each decision to the path it covers. The user can cancel the whole operation before any target is written, including by explicitly declining to resolve a conflict.
 
-1. Show each conflicting path with a concise difference summary.
-2. For each conflicting file, ask the user to choose one of:
-   - `overwrite`: replace this file with the template.
-   - `keep`: leave this file as it is.
-   - `merge`: analyze the differences and propose a merged version for the user to decide on.
-3. Apply each decision only to the file it names. A decision for one file does not apply to another.
-4. If a decision is missing, ask for it again.
+For a merge, compare missing template rules, project-specific additions, and conflicting rules. Give a short rationale for each proposed choice, flag uncertain rule origins, and read only the documentation needed for proposed index entries. Write the complete proposal to an `mktemp` file outside the project and show its full contents. Continue read-only preparation for other targets while waiting. Apply a merge only after the user approves the exact version shown. Show revisions for approval or follow a later `overwrite`, `keep`, or `cancel` choice.
 
-At any point the user may `cancel`. This ends the run without modifying any target, regardless of decisions already given for other files. Treat an explicit refusal to decide as `cancel`.
+## Apply and verify
 
-### Merge Proposal
+Once every conflict has a decision, complete authorized writes without another confirmation. Skip `unchanged`, `keep`, and `blocked` targets. Create only required parent directories.
 
-For each file the user chooses to `merge`:
+Stage a temporary regular file in the verified target directory. Copy the template for `create` and `overwrite`, or the exact approved proposal for `merge`. Verify the staged bytes with `cmp -s`. For a new file, apply the template mode under the current umask. For a replacement, preserve the target's owner, group, permissions, and any access ACL. If required metadata cannot be preserved, report the target as blocked before publishing.
 
-1. Compare the template with the current file and group the differences:
-   - template rules that are missing or outdated in the current file;
-   - current content absent from the template, usually project-specific additions;
-   - rules that contradict each other.
-2. For each difference, recommend adopting the template, keeping the current content, or combining both, with a short reason. There is no record of earlier template versions, so mark any inference about whether content came from the project or from an earlier template as uncertain.
-3. For `docs/index.md`, the proposal may add navigation entries for the entries found in Step 2. Read only what is needed to describe their reading scenarios.
-4. Create a temporary file outside the target root with `mktemp`, record its path, write the complete proposal to it, and show its full contents.
-5. Let the user approve it, request changes, `cancel`, or switch to `overwrite` or `keep`. After requested changes, update the temporary file and show it again.
+Immediately before publishing, recheck the parent path and the target without following symbolic links below the root. An existing conflict must still match its inspected contents and access metadata. Publish a new file with an atomic no-clobber operation such as linking the staged file to the exact destination with `link(2)`. Replace an approved conflict with a same-directory atomic rename that replaces the destination entry. Use a verified directory handle or equivalent when available to bind publication to the checked parent. If the target or parent has changed, leave it intact and reassess. Coordinate with any known concurrent writer before replacing a file, since the final rename does not compare contents.
 
-A `merge` decision counts as resolved only after the user explicitly approves the exact proposal shown.
-
-## Step 4: Create the Configuration
-
-Proceed only when every conflict has an explicit `overwrite`, `keep`, or approved `merge` decision.
-
-1. Create required parent directories when they do not exist.
-2. Immediately before writing a `create` target, confirm that it still does not exist. If it now exists, mark it `failed` without writing.
-3. Copy each `create` target and each `overwrite` target from its template with `cp <template> <target>`.
-4. Copy each approved `merge` proposal from its temporary file with `cp <proposal> <target>`.
-5. Leave `unchanged` and `keep` targets untouched.
-6. Verify each written target with `cmp -s <source> <target>`, where the source is the template or the approved proposal. If verification fails, mark that target `failed` and report it without attempting a repair.
-
-When one target fails, continue with the other target and do not roll back a target that passed verification.
-
-Do not write targets through a text-editing or file-writing tool. Do not translate, expand, customize, or infer project-specific content while copying templates; a merged target may differ from the template only as shown in the approved proposal.
-
-Only create or replace the two mapped target files and any missing parent directories required for them. Do not modify or delete other files, including other content under `docs/`.
+Verify the published file against its source with `cmp -s`. A preparation, publication, or verification failure affects only that target. Continue independent authorized writes and preserve other verified results.
 
 ## Temporary Files
 
-On every exit path, including `cancel`, a switched decision, and success, remove the temporary proposal files this run created. Keep the proposal of a `failed` merge target and report its path so the user can recover the approved content.
+Remove staging files on every exit path. Remove temporary proposals on success, cancellation, or a changed decision. Retain an approved proposal if its write or verification failed so the user can recover it.
 
-## Step 5: Report the Result
+## Report the result
 
-Report the outcome for each of the two targets:
+Report the project path and the outcome for each target (`created`, `replaced`, `merged`, `kept`, `unchanged`, `blocked`, or `failed`). For a blocked or failed target, give the observed reason, current state, and any retained proposal path. On cancellation, confirm that both targets were preserved.
 
-- `created`: the target did not exist and was written from the template.
-- `replaced`: a conflict the user chose to overwrite was replaced with the template contents.
-- `merged`: a conflict was replaced with the user-approved merge proposal.
-- `kept`: a conflict the user chose to keep was left untouched.
-- `unchanged`: the target already matched the template and was left untouched.
-- `blocked`: the target was skipped; report the reason found in Step 2.
-- `failed`: the target could not be written or verified; report the error, the target's current state, and any retained proposal path.
-
-When `docs/index.md` is not `kept` or `blocked` and does not link some entries found in Step 2, list those entries, state that they are not yet indexed, and recommend adding them to the navigation as a follow-up. Do not edit `docs/index.md` to index them.
+When `docs/index.md` was created, replaced, merged, or already matched the template, report any existing `docs/` entries missing from its navigation. Adding links requires an approved merge proposal.
 
 When `AGENTS.md` was written, mention that Claude Code users can load it by adding `@AGENTS.md` to the project's `CLAUDE.md`, unless an existing `CLAUDE.md` already references it.
-
-If the user cancelled, state that initialization was not performed and confirm that no files were modified.
