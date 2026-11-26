@@ -6,6 +6,10 @@
 
 - [agent-config-setup](./skills/development/agent-config-setup/SKILL.md) 用于从内置模板初始化或同步项目的 `AGENTS.md` 和 `docs/index.md`。遇到冲突时，可按文件选择覆盖、保留或合并。合并方案须经用户确认。写入项目文件前可取消整个操作。
 
+### Design
+
+- [ui-baseline](./skills/design/ui-baseline/SKILL.md): 不绑定具体主题的通用 Web UI 基线规范，覆盖布局层级、排版对比、4px 间距栅格、圆角几何、按意图显隐控件、桌面端多级菜单与真实浏览器渲染验收；可独立使用，也可与 `ui` skill 联动加载。
+
 ### Git Workflow
 
 Eight independently usable skills cover account policy, local preparation, commits, branch publication, PR metadata, content review, merging, and task cleanup. Account roles and repository policies come from applicable user/project instructions; the skills contain no personal account matrix. Each skill owns its references and can be installed independently.
